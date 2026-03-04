@@ -35,41 +35,104 @@ from torch.nn.utils.rnn import pad_sequence
 #     # Start the vLLM server using system
 #     os.system(f"vllm serve --model {model_name}")
 
-def prepare_input_tokens(
-    speaker_name: str, 
-    target_text: Union[str, list[str]], 
-    description: Union[str, list[str]], 
-    tokenizer,
-)->dict: 
-    "Prepare input tokens for TTS generation."
-    if isinstance(target_text, str):
-        input_text = f"<|im_start|>{speaker_name}: {target_text}<|description|>{description}<|speech_start|>"
-        return tokenizer(input_text, return_tensors="pt")
-    else: 
-        input_texts = []
-        for text, desc in zip(target_text, description):
-            input_texts.append(f"<|im_start|>{speaker_name}: {text}<|description|>{desc}<|speech_start|>")
-        return tokenizer(input_texts, return_tensors="pt", padding=True)
+class BaseTTSModel: 
+    def __init__(self):
+        pass 
+    
+    def generate(self, *args, **kwargs):
+        raise NotImplementedError("Subclasses should implement this method.")
+class ScicomTTSModel(BaseTTSModel): 
+    def __init__(self, 
+                 model_name: str, 
+                 device: torch.device, 
+                 sampling: bool = False, 
+                 sample_size: int = 3, ):
+        self.model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
+        self.codec = NeuCodec.from_pretrained("neuphonic/neucodec").to(device)
+        self.sampling = sampling
+        self.sample_size = sample_size
+        self.device = device 
+    
+    @staticmethod
+    def _prepare_input_tokens(
+        target_text: Union[str, list[str]], 
+        description: Union[str, list[str]], 
+        tokenizer,
+        speaker_name: str = "genshin-voice_audio_Rahman"
+    )->dict: 
+        "Prepare input tokens for TTS generation."
+        if isinstance(target_text, str):
+            input_text = f"<|im_start|>{speaker_name}: {target_text}<|description|>{description}<|speech_start|>"
+            return tokenizer(input_text, return_tensors="pt")
+        else: 
+            input_texts = []
+            for text, desc in zip(target_text, description):
+                input_texts.append(f"<|im_start|>{speaker_name}: {text}<|description|>{desc}<|speech_start|>")
+            return tokenizer(input_texts, return_tensors="pt", padding=True)
 
-def decocde_output_tokens(
-    output_tokens: torch.Tensor, # (B, S)
-    tokenizer,
-    codec,
-    save_path: Union[str, list[str]] = None,
-): 
-    "Decode output tokens to audio and save the audio file."
-    if output_tokens.shape[0] > 1 and not isinstance(save_path, list) and len(save_path) != output_tokens.shape[0]:
-        raise ValueError("save_path should be a list of paths with the same length as output_tokens batch size")
-    
-    decode_tokens = tokenizer.batch_decode(output_tokens, skip_special_tokens=False)
-    for i, decode_token in enumerate(decode_tokens):
-        codec_tokens = re.findall(r"<\|s_(\d+)\|>", decode_token)
-        codec_tokens = torch.tensor([int(token) for token in codec_tokens])[None, None, :].to(codec.device)
+    @staticmethod
+    def _decocde_output_tokens(
+        output_tokens: torch.Tensor, # (B, S)
+        tokenizer,
+        codec,
+        save_path: Union[str, list[str]] = None,
+    ): 
+        "Decode output tokens to audio and save the audio file."
+        if output_tokens.shape[0] > 1 and not isinstance(save_path, list) and len(save_path) != output_tokens.shape[0]:
+            raise ValueError("save_path should be a list of paths with the same length as output_tokens batch size")
+        
+        decode_tokens = tokenizer.batch_decode(output_tokens, skip_special_tokens=False)
+        for i, decode_token in enumerate(decode_tokens):
+            codec_tokens = re.findall(r"<\|s_(\d+)\|>", decode_token)
+            codec_tokens = torch.tensor([int(token) for token in codec_tokens])[None, None, :].to(codec.device)
+            with torch.no_grad():
+                audio = codec.decode_code(codec_tokens).to('cpu') # (1, 1, T)
+                sf.write(save_path[i] if isinstance(save_path, list) else save_path, audio[0,0].numpy(), samplerate=24000)
+                # sf.write(save_path, audio[0,0].numpy(), samplerate=24000)
+                
+    def generate(self,  
+                 target_text: Union[str, list[str]],
+                 description: Union[str, list[str]],
+                 save_paths: list[str], 
+                 **kwargs):
+        input_tokens = self._prepare_input_tokens(
+            target_text=target_text, 
+            description=description,
+            tokenizer=self.tokenizer, 
+            **kwargs
+        ).to(self.device)
+        
         with torch.no_grad():
-            audio = codec.decode_code(codec_tokens).to('cpu') # (1, 1, T)
-            sf.write(save_path[i] if isinstance(save_path, list) else save_path, audio[0,0].numpy(), samplerate=24000)
-            # sf.write(save_path, audio[0,0].numpy(), samplerate=24000)
-    
+            generation_kwargs = {
+                "max_new_tokens":2048,
+                "do_sample":True,
+                "temperature":0.8,
+                "repetition_penalty":1.15,
+            }
+            if self.sampling: 
+                generation_kwargs["num_return_sequences"] = self.sample_size
+                generation_kwargs["num_beams"] = 1
+            output_tokens = self.model.generate(
+                **input_tokens, 
+                **generation_kwargs
+                )
+
+        self._decocde_output_tokens(
+            output_tokens=output_tokens, 
+            tokenizer=self.tokenizer,
+            codec=self.codec, 
+            save_path=save_paths
+        )
+
+MODEL_MAPPING = {
+    "Scicom-intl/Multilingual-Expressive-TTS-1.7B" : ScicomTTSModel,
+    "Scicom-intl/Multilingual-Expressive-TTS-0.6B" : ScicomTTSModel,
+    "": None, # placeholder for future models (QwenTTS)
+    "": None, # placeholder for future models (CosyVoice)
+    "": None, # placeholder for future models (What else?)
+}
+
 def main(
     dataset: str,
     model_name: str,
@@ -84,6 +147,9 @@ def main(
     model = None
     codec = None
     os.makedirs(output_dir, exist_ok=True)
+    
+    if not model_name in MODEL_MAPPING:
+        raise ValueError(f"Model {model_name} is not supported. Please choose from {list(MODEL_MAPPING.keys())}")
     
     # 1. Generate TTS 
     timer = time()
@@ -104,38 +170,12 @@ def main(
                 continue
             
             if model is None:
-                model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
-                codec = NeuCodec.from_pretrained("neuphonic/neucodec").to(device)
-                codec.eval()
-                tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
+                model = MODEL_MAPPING[model_name](model_name=model_name, device=device, sampling=sampling, sample_size=sample_size)
                 
-            input_tokens = prepare_input_tokens(
-                speaker_name="genshin-voice_audio_Rahman", 
-                target_text=samples["text"], 
+            model.generate(
+                target_text=samples["text"],
                 description=samples["APS"],
-                tokenizer=tokenizer
-            ).to(device)
-            
-            with torch.no_grad():
-                generation_kwargs = {
-                    "max_new_tokens":2048,
-                    "do_sample":True,
-                    "temperature":0.8,
-                    "repetition_penalty":1.15,
-                }
-                if sampling: 
-                    generation_kwargs["num_return_sequences"] = sample_size
-                    generation_kwargs["num_beams"] = 1
-                output_tokens = model.generate(
-                    **input_tokens, 
-                    **generation_kwargs
-                    )
-
-            decocde_output_tokens(
-                output_tokens=output_tokens, 
-                tokenizer=tokenizer,
-                codec=codec, 
-                save_path=save_paths
+                save_paths=save_paths
             )
         
     # clear GPU memory and codec model
