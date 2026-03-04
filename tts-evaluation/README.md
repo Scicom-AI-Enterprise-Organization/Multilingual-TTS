@@ -20,5 +20,7 @@ uv pip install git+https://github.com/sarulab-speech/UTMOSv2.git
 
 Benchmark
 ```bash
-python evaluate.py --model_name Scicom-intl/Multilingual-Expressive-TTS-1.7B
+python evaluate.py \
+    --model_name Scicom-intl/Multilingual-Expressive-TTS-1.7B \
+    --batch_size 10
 ```
