@@ -36,7 +36,11 @@ from torch.nn.utils.rnn import pad_sequence
 #     os.system(f"vllm serve --model {model_name}")
 
 class BaseTTSModel: 
-    def __init__(self):
+    def __init__(self,
+                 model_name: str, 
+                 device: torch.device, 
+                 sampling: bool = False, 
+                 sample_size: int = 3, ):
         pass 
     
     def generate(self, *args, **kwargs):
@@ -125,11 +129,62 @@ class ScicomTTSModel(BaseTTSModel):
             save_path=save_paths
         )
 
+class QwenTTSModel(BaseTTSModel):
+    def __init__(self,
+                 model_name: str, 
+                 device: torch.device, 
+                 sampling: bool = False, 
+                 sample_size: int = 3, ): 
+        try:
+            from qwen_tts import Qwen3TTSModel
+        except ImportError:
+            raise ImportError("QwenTTSModel requires the qwen-tts package. Please install it first.")
+        self.model = Qwen3TTSModel.from_pretrained(
+            model_name,
+            device_map=device.type,
+            dtype=torch.bfloat16,
+        )
+        self.sampling = sampling
+        self.sample_size = sample_size
+
+    def generate(self,  
+                 target_text: Union[str, list[str]],
+                 description: Union[str, list[str]],
+                 save_paths: list[str], 
+                 speaker_name: str = "Vivian",
+                 **kwargs):
+        
+        _target_text = []
+        _description = []
+        _speaker_name = [ speaker_name ]
+        if self.sampling: 
+            for text in target_text:
+                _target_text.extend([text] * self.sample_size)
+            for desc in description:
+                _description.extend([desc] * self.sample_size)
+            _speaker_name = _speaker_name * len(target_text) * self.sample_size
+        else: 
+            _target_text = target_text
+            _speaker_name = _speaker_name * len(target_text)
+            _description = description
+        
+        wavs, sr = self.model.generate_custom_voice(
+            text=_target_text,
+            # language=["Chinese", "English"],
+            speaker=_speaker_name,
+            instruct=_description
+        )
+        if sr != 24000:
+            raise ValueError(f"Expected sample rate of 24000, but got {sr}. Resampling is needed")
+        
+        for wav, save_path in zip(wavs, save_paths):
+            sf.write(save_path, wav, samplerate=sr)
+        
 MODEL_MAPPING = {
     "Scicom-intl/Multilingual-Expressive-TTS-1.7B" : ScicomTTSModel,
     "Scicom-intl/Multilingual-Expressive-TTS-0.6B" : ScicomTTSModel,
-    "": None, # placeholder for future models (QwenTTS)
-    "": None, # placeholder for future models (CosyVoice)
+    "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice": QwenTTSModel,
+    "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice": None, # placeholder for future models (CosyVoice)
     "": None, # placeholder for future models (What else?)
 }
 
