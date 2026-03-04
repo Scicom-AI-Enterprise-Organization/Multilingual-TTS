@@ -5,6 +5,13 @@ source .venv/bin/activate
 uv pip install vllm datasets transformers torch soundfile jiwer
 uv pip install neucodec
 uv pip install git+https://github.com/sarulab-speech/UTMOSv2.git
+
+# evaluate TTS model with pass@k, k=3
+python evaluate.py \
+    --model_name Scicom-intl/Multilingual-Expressive-TTS-1.7B \
+    --batch_size 10 \
+    --sampling 
+    --sample_size 3
 """
 from vllm import LLM
 from datasets import load_dataset
@@ -184,8 +191,8 @@ MODEL_MAPPING = {
     "Scicom-intl/Multilingual-Expressive-TTS-1.7B" : ScicomTTSModel,
     "Scicom-intl/Multilingual-Expressive-TTS-0.6B" : ScicomTTSModel,
     "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice": QwenTTSModel,
-    "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice": None, # placeholder for future models (CosyVoice)
-    "": None, # placeholder for future models (What else?)
+    "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice": QwenTTSModel, 
+    "": None, # Other models can be added here in the future
 }
 
 def main(
