@@ -41,6 +41,7 @@ def prepare_input_tokens(
     description: Union[str, list[str]], 
     tokenizer,
 )->dict: 
+    "Prepare input tokens for TTS generation."
     if isinstance(target_text, str):
         input_text = f"<|im_start|>{speaker_name}: {target_text}<|description|>{description}<|speech_start|>"
         return tokenizer(input_text, return_tensors="pt")
@@ -56,7 +57,7 @@ def decocde_output_tokens(
     codec,
     save_path: Union[str, list[str]] = None,
 ): 
-    "Decode output tokens to audio and save the audio file"
+    "Decode output tokens to audio and save the audio file."
     if output_tokens.shape[0] > 1 and not isinstance(save_path, list) and len(save_path) != output_tokens.shape[0]:
         raise ValueError("save_path should be a list of paths with the same length as output_tokens batch size")
     
@@ -75,6 +76,8 @@ def main(
     output_dir: str, 
     length: int = None, 
     batch_size: int = 1,
+    sampling: bool = False, 
+    sample_size: int = 3
 ):
     ds_dict = load_dataset(dataset)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -91,7 +94,12 @@ def main(
         for start in tqdm(range(0, len(ds), batch_size), desc=f"Generating TTS for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
             end = min(start + batch_size, len(ds))
             samples = ds[start:end]
-            save_paths = [os.path.join(output_dir, f"output_{lang}_{id}.wav") for id in samples["id"]]
+            if sampling: 
+                save_paths = []
+                for id in samples["id"]:
+                    save_paths.extend([os.path.join(output_dir, f"output_{lang}_{id}_{i}.wav") for i in range(sample_size)])
+            else:
+                save_paths = [os.path.join(output_dir, f"output_{lang}_{id}.wav") for id in samples["id"]]
             if all(os.path.exists(path) for path in save_paths):
                 continue
             
@@ -109,12 +117,19 @@ def main(
             ).to(device)
             
             with torch.no_grad():
+                generation_kwargs = {
+                    "max_new_tokens":2048,
+                    "do_sample":True,
+                    "temperature":0.8,
+                    "repetition_penalty":1.15,
+                }
+                if sampling: 
+                    generation_kwargs["num_return_sequences"] = sample_size
+                    generation_kwargs["num_beams"] = 1
                 output_tokens = model.generate(
                     **input_tokens, 
-                    max_new_tokens=2048,
-                    do_sample=True,
-                    temperature=0.8,
-                    repetition_penalty=1.15,)
+                    **generation_kwargs
+                    )
 
             decocde_output_tokens(
                 output_tokens=output_tokens, 
@@ -138,16 +153,18 @@ def main(
         for start in tqdm(range(0, len(ds), batch_size), desc=f"Transcription for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
             end = min(start + batch_size, len(ds))
             samples = ds[start:end]
-            save_paths = [os.path.join(output_dir, f"trans_{lang}_{id}.txt") for id in samples["id"]]
-            audio_paths = [os.path.join(output_dir, f"output_{lang}_{id}.wav") for id in samples["id"]]
+            if sampling:
+                save_paths = []
+                audio_paths = []
+                for id in samples["id"]:
+                    save_paths.extend([os.path.join(output_dir, f"trans_{lang}_{id}_{i}.txt") for i in range(sample_size)])
+                    audio_paths.extend([os.path.join(output_dir, f"output_{lang}_{id}_{i}.wav") for i in range(sample_size)])
+            else:
+                save_paths = [os.path.join(output_dir, f"trans_{lang}_{id}.txt") for id in samples["id"]]
+                audio_paths = [os.path.join(output_dir, f"output_{lang}_{id}.wav") for id in samples["id"]]
             if all(os.path.exists(save_path) for save_path in save_paths):
                 continue
-    #         save_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}.txt")
-    #         audio_path = os.path.join(output_dir, f"output_{lang}_{sample['id']}.wav")
-    #         if not os.path.exists(audio_path):
-    #             continue
-    #         if os.path.exists(save_path):
-    #             continue
+
             if model is None:
                 model = AutoModelForSpeechSeq2Seq.from_pretrained(
                     "openai/whisper-large-v3", 
@@ -160,7 +177,6 @@ def main(
             for audio_path in audio_paths:
                 audio, sr = sf.read(audio_path)
                 audio = torch.from_numpy(audio).to(torch.float32)
-                print(audio.shape)
                 audios.append(audio)
             audios = pad_sequence(audios, batch_first=True) # (B, T)
             
@@ -197,9 +213,16 @@ def main(
         for start in tqdm(range(0, len(ds), batch_size), desc=f"Transcription for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
             end = min(start + batch_size, len(ds))
             samples = ds[start:end]
-            save_paths = [ os.path.join(output_dir, f"mos_{lang}_{id}.txt") for id in samples["id"]]
-            audio_paths = [ f"output_{lang}_{id}.wav" for id in samples["id"] ]
-    #         save_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}.txt")
+            if sampling:
+                save_paths = []
+                audio_paths = []
+                for id in samples["id"]:
+                    save_paths.extend([os.path.join(output_dir, f"mos_{lang}_{id}_{i}.txt") for i in range(sample_size)])
+                    audio_paths.extend([ f"output_{lang}_{id}_{i}.wav" for i in range(sample_size)])
+            else:
+                save_paths = [ os.path.join(output_dir, f"mos_{lang}_{id}.txt") for id in samples["id"]]
+                audio_paths = [ f"output_{lang}_{id}.wav" for id in samples["id"] ]
+
             if all(os.path.exists(save_path) for save_path in save_paths):
                 continue
             
@@ -220,16 +243,28 @@ def main(
         ds = ds.select(range(length)) if length is not None else ds
         
         for sample in tqdm(ds, desc=f"Calculating CER for {lang}", total=len(ds)):
-            trans_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}.txt")
-            mos_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}.txt")
-            with open(trans_path, "r") as f:
-                transcription = f.read().strip()
-            with open(mos_path, "r") as f:
-                mos = float(f.read().strip())
-                
-            cer_score = min(cer(sample["text"], transcription), 1.0)
-            cer_scores.append(cer_score)
-            mos_scores.append(mos)
+            if sampling:
+                for i in range(sample_size):
+                    trans_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}_{i}.txt")
+                    mos_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}_{i}.txt")
+                    with open(trans_path, "r") as f:
+                        transcription = f.read().strip()
+                    with open(mos_path, "r") as f:
+                        mos = float(f.read().strip())
+                    cer_score = min(cer(sample["text"], transcription), 1.0)
+                    cer_scores.append(cer_score)
+                    mos_scores.append(mos)
+            else:
+                trans_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}.txt")
+                mos_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}.txt")
+                with open(trans_path, "r") as f:
+                    transcription = f.read().strip()
+                with open(mos_path, "r") as f:
+                    mos = float(f.read().strip())
+                    
+                cer_score = min(cer(sample["text"], transcription), 1.0)
+                cer_scores.append(cer_score)
+                mos_scores.append(mos)
             
     avg_cer = sum(cer_scores) / len(cer_scores)
     avg_mos = sum(mos_scores) / len(mos_scores)
@@ -243,10 +278,14 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default="./output")
     parser.add_argument("--length", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=1)
+    parser.add_argument("--sampling", action="store_true", help="Whether to use sampling for generation")
+    parser.add_argument("--sample_size", type=int, default=3, help="Number of samples to generate for each input when using sampling")
     args = parser.parse_args()
 
     main(args.dataset, 
          args.model_name, 
          args.output_dir, 
          args.length, 
-         args.batch_size)
+         args.batch_size,
+         args.sampling,
+         args.sample_size)
