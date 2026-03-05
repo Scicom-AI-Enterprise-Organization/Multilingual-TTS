@@ -2,7 +2,7 @@
 uv venv --python 3.12
 source .venv/bin/activate
 
-uv pip install datasets transformers torch soundfile jiwer setuptools git+https://github.com/resemble-ai/chatterbox.git
+uv pip install datasets transformers torch soundfile jiwer  # setuptools git+https://github.com/resemble-ai/chatterbox.git git+https://github.com/resemble-ai/Perth.git
 uv pip install neucodec
 uv pip install git+https://github.com/sarulab-speech/UTMOSv2.git
 uv pip install git+https://github.com/resemble-ai/chatterbox.git (for multilingual TTS)
@@ -10,13 +10,29 @@ uv pip install git+https://github.com/resemble-ai/chatterbox.git (for multilingu
 # evaluate TTS model with pass@k, k=3
 python evaluate.py \
     --model_name Scicom-intl/Multilingual-Expressive-TTS-1.7B \
-    --batch_size 10 \
+    --batch_size 2 \
     --sampling \
-    --sample_size 3
+    --sample_size 2 \
+    --output_dir ./scicom-tts \
+    --length 4
     
-python evaluate.py --model_name chatterbox --batch_size 2 --length 10
+python evaluate.py \
+    --model_name Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice \
+    --batch_size 2 \
+    --sampling \
+    --sample_size 2 \
+    --length 10
+    
+python evaluate.py \
+    --model_name chatterbox \
+    --batch_size 2 \
+    --length 10 \
+    --sampling \
+    --sample_size 2
+    
+hf download Scicom-intl/Evaluation-Multilingual-VC --exclude *.zip --repo-type dataset
 """
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict, Dataset as HFDataset
 from transformers import (
     AutoTokenizer, 
     AutoModelForCausalLM, 
@@ -39,10 +55,7 @@ import utmosv2
 from typing import Union
 from time import time
 from torch.nn.utils.rnn import pad_sequence
-
-# def run_whisper(model_name:str):
-#     # Start the vLLM server using system
-#     os.system(f"vllm serve --model {model_name}")
+import json
 
 class BaseTTSModel: 
     def __init__(self,
@@ -70,18 +83,21 @@ class ScicomTTSModel(BaseTTSModel):
     @staticmethod
     def _prepare_input_tokens(
         target_text: Union[str, list[str]], 
-        description: Union[str, list[str]], 
+        description: Union[str, list[str], None], 
         tokenizer,
         speaker_name: str = "genshin-voice_audio_Rahman"
     )->dict: 
         "Prepare input tokens for TTS generation."
         if isinstance(target_text, str):
-            input_text = f"<|im_start|>{speaker_name}: {target_text}<|description|>{description}<|speech_start|>"
+            description_format = f"<|description|>{description}" if description is not None else ""
+            input_text = f"<|im_start|>{speaker_name}: {target_text}{description_format}<|speech_start|>"
             return tokenizer(input_text, return_tensors="pt")
         else: 
             input_texts = []
+            description = description if description is not None else [None] * len(target_text)
             for text, desc in zip(target_text, description):
-                input_texts.append(f"<|im_start|>{speaker_name}: {text}<|description|>{desc}<|speech_start|>")
+                description_format = f"<|description|>{desc}" if desc is not None else ""
+                input_texts.append(f"<|im_start|>{speaker_name}: {text}{description_format}<|speech_start|>")
             return tokenizer(input_texts, return_tensors="pt", padding=True)
 
     @staticmethod
@@ -106,14 +122,16 @@ class ScicomTTSModel(BaseTTSModel):
                 
     def generate(self,  
                  target_text: Union[str, list[str]],
-                 description: Union[str, list[str]],
+                 description: Union[str, list[str], None],
                  save_paths: list[str], 
                  **kwargs):
+        
+        speaker_name = kwargs.get("speaker_name", "genshin-voice_audio_Rahman")
         input_tokens = self._prepare_input_tokens(
             target_text=target_text, 
             description=description,
             tokenizer=self.tokenizer, 
-            **kwargs
+            speaker_name=speaker_name,
         ).to(self.device)
         
         with torch.no_grad():
@@ -137,7 +155,6 @@ class ScicomTTSModel(BaseTTSModel):
             codec=self.codec, 
             save_path=save_paths
         )
-
 class QwenTTSModel(BaseTTSModel):
     def __init__(self,
                  model_name: str, 
@@ -155,13 +172,37 @@ class QwenTTSModel(BaseTTSModel):
         )
         self.sampling = sampling
         self.sample_size = sample_size
+    
+    def mapped_language(self, lang):
+        mapping = {
+            "zh": "Chinese",
+            "en": "English",
+            "fr": "French",
+            "de": "German",
+            "it": "Italian",
+            "ja": "Japanese",
+            "ko": "Korean",
+            "pt": "Portuguese",
+            "ru": "Russian",
+            "es": "Spanish"
+        }
+        return mapping.get(lang, lang)
+    
+    def supported_languages(self):
+        return [
+            'zh', 'en', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'ru', 'es'
+        ]
 
     def generate(self,  
                  target_text: Union[str, list[str]],
-                 description: Union[str, list[str]],
+                 description: Union[str, list[str], None],
                  save_paths: list[str], 
                  speaker_name: str = "Vivian",
                  **kwargs):
+        
+        lang = kwargs.get("language", "en")
+        if lang not in self.supported_languages():
+            return
         
         _target_text = []
         _description = []
@@ -172,14 +213,16 @@ class QwenTTSModel(BaseTTSModel):
             for desc in description:
                 _description.extend([desc] * self.sample_size)
             _speaker_name = _speaker_name * len(target_text) * self.sample_size
+            _language = [self.mapped_language(lang)] * len(target_text) * self.sample_size
         else: 
             _target_text = target_text
             _speaker_name = _speaker_name * len(target_text)
             _description = description
-        
+            _language = [self.mapped_language(lang)] * len(target_text)
+
         wavs, sr = self.model.generate_custom_voice(
             text=_target_text,
-            # language=["Chinese", "English"],
+            language=_language,
             speaker=_speaker_name,
             instruct=_description
         )
@@ -188,7 +231,6 @@ class QwenTTSModel(BaseTTSModel):
         
         for wav, save_path in zip(wavs, save_paths):
             sf.write(save_path, wav, samplerate=sr)
-
 class ChatterBox(BaseTTSModel):
     def __init__(self, 
                  model_name: str, 
@@ -234,26 +276,77 @@ class ChatterBox(BaseTTSModel):
         if lang not in self.supported_languages():
             return 
         
-        for text, save_path in zip(target_text, save_paths):
+        for i, text in enumerate(target_text):
             if self.sampling:
-                for _ in range(self.sample_size):
+                for j in range(self.sample_size):
                     wav = self.model.generate(text, language_id=lang)
                     if self.model.sr != 24000:
                         raise ValueError(f"Expected sample rate of 24000, but got {self.model_sr}. Resampling is needed")
-                    sf.write(save_path, wav[0].cpu().numpy(), samplerate=self.model.sr) 
+                    sf.write(save_paths[i * self.sample_size + j], wav[0].cpu().numpy(), samplerate=self.model.sr)
             else:
                 wav = self.model.generate(text, language_id=lang)
                 if self.model.sr != 24000:
                     raise ValueError(f"Expected sample rate of 24000, but got {self.model_sr}. Resampling is needed")
-                sf.write(save_path, wav[0].cpu().numpy(), samplerate=self.model.sr)
+                sf.write(save_paths[i], wav[0].cpu().numpy(), samplerate=self.model.sr)
 
 MODEL_MAPPING = {
     "Scicom-intl/Multilingual-Expressive-TTS-1.7B" : ScicomTTSModel,
     "Scicom-intl/Multilingual-Expressive-TTS-0.6B" : ScicomTTSModel,
     "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice": QwenTTSModel,
     "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice": QwenTTSModel, 
-    "chatterbox": ChatterBox, # Other models can be added here in the future
+    "chatterbox": ChatterBox,
 }
+
+class Dataset:
+    def __init__(self, 
+                 dataset_name: str, 
+                 length: int = None):
+        self.ds = load_dataset(
+            dataset_name, 
+            "combine_filtered_whisper_large_v3", 
+            split="train"
+        )
+        self.__split_by_language()
+        self.__drop_unused_columns(["source_text", "upvotes", "speaker_id", "audio_filename"])
+        self.ds = self.ds.map(lambda x, idx: {"id": idx}, with_indices=True)
+        self.ds = self.ds.rename_column("target_text", "text")
+        self.length = length
+        self.expressive = False 
+    
+    def __get_language_mapping(self)->dict[str, str]:
+        "Get the language code mapping to map with whisper supported languages."
+        with open("common-voice-whisper-mapping.json", "r") as f:
+            mapping = json.load(f)
+        return mapping
+    
+    def __split_by_language(self, lang_columns: str = "language"):
+        df = self.ds.to_pandas()
+        # map language to whisper supported language, else filter out the unsupported language
+        mapping = self.__get_language_mapping()
+        df[lang_columns] = df[lang_columns].map(mapping)
+        # print out the number of dropped samples due to unsupported language
+        num_dropped = df[lang_columns].isna().sum()
+        if num_dropped > 0:
+            print(f"Dropping {num_dropped} samples due to unsupported language.")
+        else:
+            print("All samples have supported languages.")
+        print(f"Remaining languages after mapping: {df[lang_columns].unique()}")
+        df = df.dropna(subset=[lang_columns])
+        groups = df.groupby(lang_columns)
+        self.ds = DatasetDict(
+            { lang: HFDataset.from_pandas(group.reset_index(drop=True)) for lang, group in groups }
+        )
+        
+    def __drop_unused_columns(self, columns_to_drop: list[str]): 
+        self.ds = self.ds.remove_columns(columns_to_drop)
+        
+    
+    def __iter__(self):
+        for lang, ds in self.ds.items():
+            if self.length is not None: 
+                ds = ds.select(range(self.length))
+            yield lang, ds
+    
 
 def main(
     dataset: str,
@@ -264,7 +357,8 @@ def main(
     sampling: bool = False, 
     sample_size: int = 3
 ):
-    ds_dict = load_dataset(dataset)
+    # ds_dict = load_dataset(dataset)
+    dataset = Dataset(dataset, length=length)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = None
     codec = None
@@ -275,10 +369,7 @@ def main(
     
     # 1. Generate TTS 
     timer = time()
-    for lang, ds in ds_dict.items():
-        ds = ds.remove_columns(["reference_audio"])
-        ds = ds.select(range(length)) if length is not None else ds
-        
+    for lang, ds in dataset:
         for start in tqdm(range(0, len(ds), batch_size), desc=f"Generating TTS for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
             end = min(start + batch_size, len(ds))
             samples = ds[start:end]
@@ -296,7 +387,7 @@ def main(
                 
             model.generate(
                 target_text=samples["text"],
-                description=samples["APS"],
+                description=samples.get("APS", None),
                 save_paths=save_paths, 
                 language=lang
             )
@@ -308,11 +399,8 @@ def main(
     print(f"TTS generation completed in {time() - timer:.2f} seconds.")
     timer = time()
     
-    # 2. Evaluate TTS using ASR (Whisper)   
-    for lang, ds in ds_dict.items():
-        ds = ds.remove_columns(["reference_audio"])
-        ds = ds.select(range(length)) if length is not None else ds
-        
+    # 2. Evaluate TTS using ASR (Whisper)
+    for lang, ds in dataset:
         for start in tqdm(range(0, len(ds), batch_size), desc=f"Transcription for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
             end = min(start + batch_size, len(ds))
             samples = ds[start:end]
@@ -370,10 +458,7 @@ def main(
     # # print("Run Whisper ASR evaluation...")
     
     # # 3. Evaluate MOS using UTMOSv2
-    for lang, ds in ds_dict.items():
-        ds = ds.remove_columns(["reference_audio"])
-        ds = ds.select(range(length)) if length is not None else ds
-        
+    for lang, ds in dataset:
         for start in tqdm(range(0, len(ds), batch_size), desc=f"Transcription for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
             end = min(start + batch_size, len(ds))
             samples = ds[start:end]
@@ -402,10 +487,7 @@ def main(
     # # 4. Summarize the evaluation results
     cer_scores = []
     mos_scores = []
-    for lang, ds in ds_dict.items():
-        ds = ds.remove_columns(["reference_audio"])
-        ds = ds.select(range(length)) if length is not None else ds
-        
+    for lang, ds in dataset:
         for sample in tqdm(ds, desc=f"Calculating CER for {lang}", total=len(ds)):
             if sampling:
                 for i in range(sample_size):
@@ -438,7 +520,7 @@ def main(
 if __name__ == "__main__": 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, default="Scicom-intl/Multilingual-Expressive-TTS-1.7B")
-    parser.add_argument("--dataset", type=str, default="CaasiHUANG/InstructTTSEval")
+    parser.add_argument("--dataset", type=str, default="Scicom-intl/Evaluation-Multilingual-VC")
     parser.add_argument("--output_dir", type=str, default="./output")
     parser.add_argument("--length", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=1)
