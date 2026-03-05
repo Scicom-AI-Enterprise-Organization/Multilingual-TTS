@@ -2,18 +2,20 @@
 uv venv --python 3.12
 source .venv/bin/activate
 
-uv pip install vllm datasets transformers torch soundfile jiwer
+uv pip install datasets transformers torch soundfile jiwer setuptools git+https://github.com/resemble-ai/chatterbox.git
 uv pip install neucodec
 uv pip install git+https://github.com/sarulab-speech/UTMOSv2.git
+uv pip install git+https://github.com/resemble-ai/chatterbox.git (for multilingual TTS)
 
 # evaluate TTS model with pass@k, k=3
 python evaluate.py \
     --model_name Scicom-intl/Multilingual-Expressive-TTS-1.7B \
     --batch_size 10 \
-    --sampling 
+    --sampling \
     --sample_size 3
+    
+python evaluate.py --model_name chatterbox --batch_size 2 --length 10
 """
-from vllm import LLM
 from datasets import load_dataset
 from transformers import (
     AutoTokenizer, 
@@ -186,13 +188,71 @@ class QwenTTSModel(BaseTTSModel):
         
         for wav, save_path in zip(wavs, save_paths):
             sf.write(save_path, wav, samplerate=sr)
+
+class ChatterBox(BaseTTSModel):
+    def __init__(self, 
+                 model_name: str, 
+                 device: torch.device, 
+                 sampling: bool = False, 
+                 sample_size: int = 3, ):
+        try:
+            from chatterbox.mtl_tts import ChatterboxMultilingualTTS
+        except ImportError:
+            raise ImportError("ChatterBox model requires the chatterbox-tts package. Please install it first.")
+        self.model = ChatterboxMultilingualTTS.from_pretrained(device=device.type)
+        self.sampling = sampling
+        self.sample_size = sample_size
+    
+    def supported_languages(self):
+        # Arabic (ar) • Danish (da) • German (de) • Greek (el) • 
+        # English (en) • Spanish (es) • Finnish (fi) • French (fr) • 
+        # Hebrew (he) • Hindi (hi) • Italian (it) • Japanese (ja) • Korean (ko) • 
+        # Malay (ms) • Dutch (nl) • Norwegian (no) • Polish (pl) • Portuguese (pt) • 
+        # Russian (ru) • Swedish (sv) • Swahili (sw) • Turkish (tr) • Chinese (zh)
+        supported_languages = [
+            "ar", "da", "de", "en", "es", "fi", "fr", "he", "hi", "it", "ja", "ko",
+            "ms", "nl", "no", "pl", "pt", "ru", "sv", "sw", "tr", "zh"
+        ]
+        return supported_languages
+
+    def generate(self,  
+                 target_text: Union[str, list[str]],
+                 description: Union[str, list[str]],
+                 save_paths: list[str], 
+                 **kwargs):
+        """
+        Eg.
+        multilingual_model = ChatterboxMultilingualTTS.from_pretrained(device=device)
+        text = "Bonjour, comment ça va? Ceci est le modèle de synthèse vocale multilingue Chatterbox, il prend en charge 23 langues."
+        wav = multilingual_model.generate(text, language_id="fr")
+        ta.save("test-2.wav", wav, multilingual_model.sr)
+        """
+        if isinstance(target_text, list) and len(target_text) > 1:
+            print("ChatterBox model currently only supports single inference. Falling back to single inference mode.")
+            
+        lang = kwargs.get("language", "en")
+        if lang not in self.supported_languages():
+            return 
         
+        for text, save_path in zip(target_text, save_paths):
+            if self.sampling:
+                for _ in range(self.sample_size):
+                    wav = self.model.generate(text, language_id=lang)
+                    if self.model.sr != 24000:
+                        raise ValueError(f"Expected sample rate of 24000, but got {self.model_sr}. Resampling is needed")
+                    sf.write(save_path, wav[0].cpu().numpy(), samplerate=self.model.sr) 
+            else:
+                wav = self.model.generate(text, language_id=lang)
+                if self.model.sr != 24000:
+                    raise ValueError(f"Expected sample rate of 24000, but got {self.model_sr}. Resampling is needed")
+                sf.write(save_path, wav[0].cpu().numpy(), samplerate=self.model.sr)
+
 MODEL_MAPPING = {
     "Scicom-intl/Multilingual-Expressive-TTS-1.7B" : ScicomTTSModel,
     "Scicom-intl/Multilingual-Expressive-TTS-0.6B" : ScicomTTSModel,
     "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice": QwenTTSModel,
     "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice": QwenTTSModel, 
-    "": None, # Other models can be added here in the future
+    "chatterbox": ChatterBox, # Other models can be added here in the future
 }
 
 def main(
@@ -237,7 +297,8 @@ def main(
             model.generate(
                 target_text=samples["text"],
                 description=samples["APS"],
-                save_paths=save_paths
+                save_paths=save_paths, 
+                language=lang
             )
         
     # clear GPU memory and codec model
@@ -270,7 +331,7 @@ def main(
             if model is None:
                 model = AutoModelForSpeechSeq2Seq.from_pretrained(
                     "openai/whisper-large-v3", 
-                    dtype=torch.bfloat16, 
+                    torch_dtype=torch.bfloat16, # for backward compatibility
                 ).to(device)
                 processor = AutoProcessor.from_pretrained("openai/whisper-large-v3")
                 
@@ -288,7 +349,8 @@ def main(
             inputs = processor(
                 audios.numpy(), 
                 sampling_rate=16000, 
-                return_tensors="pt"
+                return_tensors="pt", 
+                language=lang,
             ).to(device)
             
             with torch.no_grad(), torch.autocast(device_type=device.type):
