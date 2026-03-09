@@ -1,20 +1,21 @@
 """
 uv venv --python 3.12
+export UV_CACHE_DIR=.cache/uv
 source .venv/bin/activate
 
-uv pip install datasets transformers torch soundfile jiwer  # setuptools git+https://github.com/resemble-ai/chatterbox.git git+https://github.com/resemble-ai/Perth.git
+uv pip install datasets transformers torch soundfile jiwer kernels  # setuptools git+https://github.com/resemble-ai/chatterbox.git git+https://github.com/resemble-ai/Perth.git
 uv pip install neucodec
 uv pip install git+https://github.com/sarulab-speech/UTMOSv2.git
 uv pip install git+https://github.com/resemble-ai/chatterbox.git (for multilingual TTS)
 
 # evaluate TTS model with pass@k, k=3
-python evaluate.py \
+CUDA_VISIBLE_DEVICES=0 python evaluate.py \
     --model_name Scicom-intl/Multilingual-Expressive-TTS-1.7B \
-    --batch_size 2 \
+    --batch_size 1 \
     --sampling \
-    --sample_size 2 \
-    --output_dir ./scicom-tts \
-    --length 4
+    --sample_size 3 \
+    --output_dir ./scicom-multilingual-expressive-tts-1.7B \
+    --replicate 2
     
 python evaluate.py \
     --model_name Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice \
@@ -30,9 +31,9 @@ python evaluate.py \
     --sampling \
     --sample_size 2
     
-hf download Scicom-intl/Evaluation-Multilingual-VC --exclude *.zip --repo-type dataset
+hf download Scicom-intl/Evaluation-Multilingual-VC --exclude "*.zip" --repo-type dataset 
 """
-from datasets import load_dataset, DatasetDict, Dataset as HFDataset
+from datasets import load_dataset, DatasetDict, Dataset as HFDataset, concatenate_datasets
 from transformers import (
     AutoTokenizer, 
     AutoModelForCausalLM, 
@@ -56,6 +57,17 @@ from typing import Union
 from time import time
 from torch.nn.utils.rnn import pad_sequence
 import json
+import pandas as pd
+from multiprocessing import Pool,current_process 
+import multiprocessing as mp
+from functools import partial
+import gc
+
+logging.basicConfig(
+    format='[%(asctime)s] %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+logger = logging.getLogger(__name__)
 
 class BaseTTSModel: 
     def __init__(self,
@@ -73,7 +85,11 @@ class ScicomTTSModel(BaseTTSModel):
                  device: torch.device, 
                  sampling: bool = False, 
                  sample_size: int = 3, ):
-        self.model = AutoModelForCausalLM.from_pretrained(model_name).to(device)
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            attn_implementation="kernels-community/flash-attn3", 
+            torch_dtype=torch.bfloat16,
+        ).to(device)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, padding_side="left")
         self.codec = NeuCodec.from_pretrained("neuphonic/neucodec").to(device)
         self.sampling = sampling
@@ -149,6 +165,7 @@ class ScicomTTSModel(BaseTTSModel):
                 **generation_kwargs
                 )
 
+        # decode output tokens to audio and save the audio file
         self._decocde_output_tokens(
             output_tokens=output_tokens, 
             tokenizer=self.tokenizer,
@@ -301,6 +318,8 @@ class Dataset:
     def __init__(self, 
                  dataset_name: str, 
                  length: int = None):
+        self.length = length
+        self.expressive = False 
         self.ds = load_dataset(
             dataset_name, 
             "combine_filtered_whisper_large_v3", 
@@ -310,8 +329,6 @@ class Dataset:
         self.__drop_unused_columns(["source_text", "upvotes", "speaker_id", "audio_filename"])
         self.ds = self.ds.map(lambda x, idx: {"id": idx}, with_indices=True)
         self.ds = self.ds.rename_column("target_text", "text")
-        self.length = length
-        self.expressive = False 
     
     def __get_language_mapping(self)->dict[str, str]:
         "Get the language code mapping to map with whisper supported languages."
@@ -324,42 +341,50 @@ class Dataset:
         # map language to whisper supported language, else filter out the unsupported language
         mapping = self.__get_language_mapping()
         df[lang_columns] = df[lang_columns].map(mapping)
-        # print out the number of dropped samples due to unsupported language
         num_dropped = df[lang_columns].isna().sum()
         if num_dropped > 0:
             print(f"Dropping {num_dropped} samples due to unsupported language.")
         else:
             print("All samples have supported languages.")
-        print(f"Remaining languages after mapping: {df[lang_columns].unique()}")
         df = df.dropna(subset=[lang_columns])
         groups = df.groupby(lang_columns)
+        # self.ds = HFDataset.from_pandas(df.reset_index(drop=True))
         self.ds = DatasetDict(
-            { lang: HFDataset.from_pandas(group.reset_index(drop=True)) for lang, group in groups }
+            { lang: HFDataset.from_pandas(group.reset_index()) for lang, group in groups }
         )
         
     def __drop_unused_columns(self, columns_to_drop: list[str]): 
         self.ds = self.ds.remove_columns(columns_to_drop)
-        
     
-    def __iter__(self):
-        for lang, ds in self.ds.items():
-            if self.length is not None: 
-                ds = ds.select(range(self.length))
-            yield lang, ds
+    def split(self, split_num: int)->list[HFDataset]: 
+        "Split the dataset into multiple subsets for parallel processing."
+        split_ds = []
+        for i in range(split_num):
+            ds_subset = []
+            for _ , ds in self.ds.items():
+                len_ds = min(self.length, ds.num_rows) if self.length is not None else ds.num_rows
+                subset_length = len_ds // split_num 
+                start = i * subset_length
+                end = min(start + subset_length, len_ds)
+                ds_subset.append(ds.select(range(start, end)))
+            split_ds.append(concatenate_datasets(ds_subset))
+            # split_ds.append(DatasetDict(ds_subset))
+        return split_ds
     
 
 def main(
-    dataset: str,
+    dataset: DatasetDict, 
+    cuda_device: int,
+    process_id: int,
     model_name: str,
     output_dir: str, 
-    length: int = None, 
     batch_size: int = 1,
     sampling: bool = False, 
-    sample_size: int = 3
+    sample_size: int = 3, 
 ):
     # ds_dict = load_dataset(dataset)
-    dataset = Dataset(dataset, length=length)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # dataset = Dataset(dataset, length=length)
+    device = f"cuda:{cuda_device}"
     model = None
     codec = None
     os.makedirs(output_dir, exist_ok=True)
@@ -369,153 +394,166 @@ def main(
     
     # 1. Generate TTS 
     timer = time()
-    for lang, ds in dataset:
-        for start in tqdm(range(0, len(ds), batch_size), desc=f"Generating TTS for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
-            end = min(start + batch_size, len(ds))
-            samples = ds[start:end]
-            if sampling: 
-                save_paths = []
-                for id in samples["id"]:
-                    save_paths.extend([os.path.join(output_dir, f"output_{lang}_{id}_{i}.wav") for i in range(sample_size)])
-            else:
-                save_paths = [os.path.join(output_dir, f"output_{lang}_{id}.wav") for id in samples["id"]]
-            if all(os.path.exists(path) for path in save_paths):
-                continue
+    for start in tqdm(range(0, len(dataset), batch_size), desc=f"[PID{process_id}:Rank{cuda_device}] Generating TTS", total=(len(dataset) + batch_size - 1) // batch_size, position=process_id):
+        end = min(start + batch_size, len(dataset))
+        samples = dataset[start:end]
+        if sampling: 
+            save_paths = []
+            for lang, id in zip(samples["language"], samples["id"]):
+                save_paths.extend([os.path.join(output_dir, f"output_{lang}_{id}_{i}.wav") for i in range(sample_size)])
+        else:
+            save_paths = [os.path.join(output_dir, f"output_{lang}_{id}.wav") for lang, id in zip(samples["language"], samples["id"])]
+        if all(os.path.exists(path) for path in save_paths):
+            continue
             
-            if model is None:
-                model = MODEL_MAPPING[model_name](model_name=model_name, device=device, sampling=sampling, sample_size=sample_size)
-                
-            model.generate(
-                target_text=samples["text"],
-                description=samples.get("APS", None),
-                save_paths=save_paths, 
-                language=lang
-            )
+        if model is None:
+            model = MODEL_MAPPING[model_name](model_name=model_name, device=device, sampling=sampling, sample_size=sample_size)
+            
+        model.generate(
+            target_text=samples["text"],
+            description=samples.get("APS", None),
+            save_paths=save_paths, 
+            language=samples["language"]
+        )
         
-    # clear GPU memory and codec model
+    # # clear GPU memory and codec model
     model = None
     del codec
+    gc.collect()
     torch.cuda.empty_cache()
     print(f"TTS generation completed in {time() - timer:.2f} seconds.")
     timer = time()
     
     # 2. Evaluate TTS using ASR (Whisper)
-    for lang, ds in dataset:
-        for start in tqdm(range(0, len(ds), batch_size), desc=f"Transcription for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
-            end = min(start + batch_size, len(ds))
-            samples = ds[start:end]
-            if sampling:
-                save_paths = []
-                audio_paths = []
-                for id in samples["id"]:
-                    save_paths.extend([os.path.join(output_dir, f"trans_{lang}_{id}_{i}.txt") for i in range(sample_size)])
-                    audio_paths.extend([os.path.join(output_dir, f"output_{lang}_{id}_{i}.wav") for i in range(sample_size)])
-            else:
-                save_paths = [os.path.join(output_dir, f"trans_{lang}_{id}.txt") for id in samples["id"]]
-                audio_paths = [os.path.join(output_dir, f"output_{lang}_{id}.wav") for id in samples["id"]]
-            if all(os.path.exists(save_path) for save_path in save_paths):
-                continue
+    for start in tqdm(range(0, len(dataset), batch_size), desc=f"[PID{process_id}:Rank{cuda_device}] Transcription", total=(len(dataset) + batch_size - 1) // batch_size, position=process_id):
+        end = min(start + batch_size, len(dataset))
+        samples = dataset[start:end]
+        if sampling:
+            save_paths = []
+            audio_paths = []
+            for lang, id in zip(samples["language"], samples["id"]):
+                save_paths.extend([os.path.join(output_dir, f"trans_{lang}_{id}_{i}.txt") for i in range(sample_size)])
+                audio_paths.extend([os.path.join(output_dir, f"output_{lang}_{id}_{i}.wav") for i in range(sample_size)])
+        else:
+            save_paths = [os.path.join(output_dir, f"trans_{lang}_{id}.txt") for lang, id in zip(samples["language"], samples["id"])]
+            audio_paths = [os.path.join(output_dir, f"output_{lang}_{id}.wav") for lang, id in zip(samples["language"], samples["id"])]
+        if all(os.path.exists(save_path) for save_path in save_paths):
+            continue
 
-            if model is None:
-                model = AutoModelForSpeechSeq2Seq.from_pretrained(
-                    "openai/whisper-large-v3", 
-                    torch_dtype=torch.bfloat16, # for backward compatibility
-                ).to(device)
-                processor = AutoProcessor.from_pretrained("openai/whisper-large-v3")
-                
-            # load audio and preprocess
-            audios = []
-            for audio_path in audio_paths:
-                audio, sr = sf.read(audio_path)
-                audio = torch.from_numpy(audio).to(torch.float32)
-                audios.append(audio)
-            audios = pad_sequence(audios, batch_first=True) # (B, T)
-            
-            sampler = T.Resample(orig_freq=24000, new_freq=16000)
-            audios = sampler(audios) # (B, T')
-            
-            inputs = processor(
-                audios.numpy(), 
-                sampling_rate=16000, 
-                return_tensors="pt", 
-                language=lang,
+        if model is None:
+            model = AutoModelForSpeechSeq2Seq.from_pretrained(
+                "openai/whisper-large-v3", 
+                torch_dtype=torch.bfloat16, # for backward compatibility
+                attn_implementation="kernels-community/flash-attn3"
             ).to(device)
+            processor = AutoProcessor.from_pretrained("openai/whisper-large-v3")
             
-            with torch.no_grad(), torch.autocast(device_type=device.type):
-                predicted_ids = model.generate(**inputs)
-            
-            transcription = processor.batch_decode(predicted_ids.cpu().numpy(), skip_special_tokens=True)
-            
-            for text, save_path in zip(transcription, save_paths):
-                with open(save_path, "w") as f:
-                    f.write(text.strip())
+        # load audio and preprocess
+        audios = []
+        for audio_path in audio_paths:
+            audio, sr = sf.read(audio_path)
+            audio = torch.from_numpy(audio).to(torch.float32)
+            audios.append(audio)
+        audios = pad_sequence(audios, batch_first=True) # (B, T)
+        
+        sampler = T.Resample(orig_freq=24000, new_freq=16000)
+        audios = sampler(audios) # (B, T')
+        
+        inputs = processor(
+            audios.numpy(), 
+            sampling_rate=16000, 
+            return_tensors="pt", 
+            language=samples["language"][0],
+        ).to(device)
+        
+        with torch.no_grad(), torch.autocast(device_type=device):
+            predicted_ids = model.generate(**inputs)
+        
+        transcription = processor.batch_decode(predicted_ids.cpu().numpy(), skip_special_tokens=True)
+        
+        for text, save_path in zip(transcription, save_paths):
+            with open(save_path, "w") as f:
+                f.write(text.strip())
     
     model = None 
+    gc.collect()
     torch.cuda.empty_cache()
-    print(f"ASR evaluation completed in {time() - timer:.2f} seconds.")
+    print(f"ASR completed in {time() - timer:.2f} seconds.")
     timer = time()
     
-    # # print("Run Whisper ASR evaluation...")
     
     # # 3. Evaluate MOS using UTMOSv2
-    for lang, ds in dataset:
-        for start in tqdm(range(0, len(ds), batch_size), desc=f"Transcription for {lang}", total=(len(ds) + batch_size - 1) // batch_size):
-            end = min(start + batch_size, len(ds))
-            samples = ds[start:end]
-            if sampling:
-                save_paths = []
-                audio_paths = []
-                for id in samples["id"]:
-                    save_paths.extend([os.path.join(output_dir, f"mos_{lang}_{id}_{i}.txt") for i in range(sample_size)])
-                    audio_paths.extend([ f"output_{lang}_{id}_{i}.wav" for i in range(sample_size)])
-            else:
-                save_paths = [ os.path.join(output_dir, f"mos_{lang}_{id}.txt") for id in samples["id"]]
-                audio_paths = [ f"output_{lang}_{id}.wav" for id in samples["id"] ]
+    for start in tqdm(range(0, len(dataset), batch_size), desc=f"[PID{process_id}:Rank{cuda_device}] MOS generation", total=(len(dataset) + batch_size - 1) // batch_size, position=process_id):
+        end = min(start + batch_size, len(dataset))
+        samples = dataset[start:end]
+        if sampling:
+            save_paths = []
+            audio_paths = []
+            for id in samples["id"]:
+                save_paths.extend([os.path.join(output_dir, f"mos_{lang}_{id}_{i}.txt") for i in range(sample_size)])
+                audio_paths.extend([ os.path.join(output_dir, f"output_{lang}_{id}_{i}.wav") for i in range(sample_size)])
+        else:
+            save_paths = [ os.path.join(output_dir, f"mos_{lang}_{id}.txt") for id in samples["id"]]
+            audio_paths = [ os.path.join(output_dir, f"output_{lang}_{id}.wav") for id in samples["id"] ]
 
-            if all(os.path.exists(save_path) for save_path in save_paths):
+        if all(os.path.exists(save_path) for save_path in save_paths):
+            continue
+        
+        if model is None:
+            model = utmosv2.create_model(pretrained=True, device=device)
+        for audio_path, save_path in zip(audio_paths, save_paths):
+            if not os.path.exists(audio_path):
+                print(f"Audio path {audio_path} does not exist. Skipping.")
                 continue
-            
-            if model is None:
-                model = utmosv2.create_model(pretrained=True, device=device)
-            mos = model.predict(input_dir=output_dir, val_list=audio_paths )
-            for prediction, save_path in zip(mos, save_paths):
-                with open(save_path, "w") as f:
-                    f.write(str(prediction["predicted_mos"]))
+            mos = model.predict(input_path=audio_path, num_workers=0, verbose=False)
+            with open(save_path, "w") as f:
+                f.write(str(mos))
     print(f"MOS evaluation completed in {time() - timer:.2f} seconds.")
     model = None 
+    gc.collect()
+    torch.cuda.empty_cache()
     
-    # # 4. Summarize the evaluation results
-    cer_scores = []
-    mos_scores = []
-    for lang, ds in dataset:
-        for sample in tqdm(ds, desc=f"Calculating CER for {lang}", total=len(ds)):
-            if sampling:
-                for i in range(sample_size):
-                    trans_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}_{i}.txt")
-                    mos_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}_{i}.txt")
-                    with open(trans_path, "r") as f:
-                        transcription = f.read().strip()
-                    with open(mos_path, "r") as f:
-                        mos = float(f.read().strip())
-                    cer_score = min(cer(sample["text"], transcription), 1.0)
-                    cer_scores.append(cer_score)
-                    mos_scores.append(mos)
-            else:
-                trans_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}.txt")
-                mos_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}.txt")
-                with open(trans_path, "r") as f:
-                    transcription = f.read().strip()
-                with open(mos_path, "r") as f:
-                    mos = float(f.read().strip())
+    # # # 4. Summarize the evaluation results (group by langauge, calculate average CER and MOS)
+    # summary = {}
+    # for lang, ds in dataset.items():
+    #     summary[lang] = {
+    #         "cer": [],
+    #         "mos": []
+    #     }
+    #     for sample in tqdm(ds, desc=f"Calculating CER for {lang}", total=len(ds)):
+    #         if sampling:
+    #             for i in range(sample_size):
+    #                 trans_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}_{i}.txt")
+    #                 mos_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}_{i}.txt")
+    #                 with open(trans_path, "r") as f:
+    #                     transcription = f.read().strip()
+    #                 with open(mos_path, "r") as f:
+    #                     mos = float(f.read().strip())
+    #                 cer_score = min(cer(sample["text"], transcription), 1.0)
+    #                 summary[lang]["cer"].append(cer_score)
+    #                 summary[lang]["mos"].append(mos)
+    #         else:
+    #             trans_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}.txt")
+    #             mos_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}.txt")
+    #             with open(trans_path, "r") as f:
+    #                 transcription = f.read().strip()
+    #             with open(mos_path, "r") as f:
+    #                 mos = float(f.read().strip())
                     
-                cer_score = min(cer(sample["text"], transcription), 1.0)
-                cer_scores.append(cer_score)
-                mos_scores.append(mos)
+    #             cer_score = min(cer(sample["text"], transcription), 1.0)
+    #             summary[lang]["cer"].append(cer_score)
+    #             summary[lang]["mos"].append(mos)
             
-    avg_cer = sum(cer_scores) / len(cer_scores)
-    avg_mos = sum(mos_scores) / len(mos_scores)
-    print(f"Average CER: {avg_cer:.4f}")
-    print(f"Average MOS: {avg_mos:.4f}")
+    # print("\nEvaluation Summary:")
+    # print("Model: ", model_name)
+    # summary_df = pd.DataFrame({
+    #     lang: {
+    #         "average_cer": sum(metrics["cer"]) / len(metrics["cer"]) if metrics["cer"] else 0.0,
+    #         "average_mos": sum(metrics["mos"]) / len(metrics["mos"]) if metrics["mos"] else 0.0
+    #     } for lang, metrics in summary.items()
+    # }).T
+    # print(summary_df.sort_values(by="average_cer"))
+    # summary_df.sort_values(by="average_cer").to_csv(os.path.join(output_dir, f"eval_summary.csv"), sep="\t")
     
 if __name__ == "__main__": 
     parser = argparse.ArgumentParser()
@@ -526,12 +564,28 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--sampling", action="store_true", help="Whether to use sampling for generation")
     parser.add_argument("--sample_size", type=int, default=3, help="Number of samples to generate for each input when using sampling")
+    parser.add_argument("--replicate", type=int, default=1)
     args = parser.parse_args()
 
-    main(args.dataset, 
-         args.model_name, 
-         args.output_dir, 
-         args.length, 
-         args.batch_size,
-         args.sampling,
-         args.sample_size)
+    devices = os.environ.get('CUDA_VISIBLE_DEVICES')
+    if devices is None:
+        devices = list(range(torch.cuda.device_count()))
+    else:
+        devices = [d.strip() for d in devices.split(',')]
+    
+    devices = devices * args.replicate
+    process_id = list(range(len(devices)))
+    dataset = Dataset(args.dataset, length=args.length)
+    split_df = dataset.split(split_num=len(devices))
+    run_eval = partial(
+        main, 
+        model_name=args.model_name, 
+        output_dir=args.output_dir, 
+        batch_size=args.batch_size, 
+        sampling=args.sampling, 
+        sample_size=args.sample_size,
+    )
+    
+    with mp.get_context("spawn").Pool(processes=len(devices)) as pool:
+        pool.starmap(run_eval, zip(split_df, devices, process_id))
+    
