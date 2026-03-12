@@ -298,7 +298,7 @@ class Dataset(BaseDataset):
         if use_hash_id:
             self.ds = self.ds.map(lambda sample: {"id": self.__hash_text(sample["text"])}, batched=False)
         else: 
-            self.ds = self.ds.map(lambda id, _ : {"id": id}, with_indices=True, batched=False)
+            self.ds = self.ds.map(lambda _, id : {"id": id}, with_indices=True, batched=False)
         
     @staticmethod
     def __hash_text(text: str)->str: 
@@ -439,7 +439,9 @@ def stt(
         torch_dtype=torch.bfloat16, # for backward compatibility
         attn_implementation=attn_implementation
     ).to(device)
+    model = torch.compile(model)
     processor = AutoProcessor.from_pretrained("openai/whisper-large-v3")
+    sampler = T.Resample(orig_freq=24000, new_freq=16000)
     
     with tqdm(total=len(dataset)*sample_size, desc=f"[PID{process_id}:Rank{cuda_device}] Transcription", position=process_id) as pbar:
         for start in range(0, len(dataset)):
@@ -456,18 +458,16 @@ def stt(
                 audio, sr = sf.read(audio_path)
                 audio = torch.from_numpy(audio).to(torch.float32)
             
-                sampler = T.Resample(orig_freq=sr, new_freq=16000)
                 audio = sampler(audio) # (T')
             
                 inputs = processor(
                     audio.numpy()[None, :], # (1, T') 
                     sampling_rate=16000, 
                     return_tensors="pt", 
-                    language=language,
                 ).to(device)
             
                 with torch.no_grad(), torch.autocast(device_type=device):
-                    predicted_ids = model.generate(**inputs)
+                    predicted_ids = model.generate(**inputs, language=language, task="transcribe")
                 
                 transcription = processor.batch_decode(predicted_ids.cpu().numpy(), skip_special_tokens=True)[0]
                 
@@ -552,7 +552,7 @@ def parallel_eval(
         "mos": evaluate_mos,
     }
     ds = dataset.split(
-        split_num=len(devices),
+        split_num=len(devices) or 1,
         prefix=_PREFIX_MAP[proc],
         sampling_size=sample_size,
         output_dir=output_dir
@@ -619,8 +619,8 @@ def summarize(dataset: Dataset, output_dir: str, sample_size: int, skip_mos: boo
     print("\nEvaluation Summary:")
     summary_df = pd.DataFrame({
         lang: {
-            "average_cer": sum(metrics["cer"]) / len(metrics["cer"]) if len(metrics["cer"]) > 0 else 0.0,
-            "average_mos": sum(metrics["mos"]) / len(metrics["mos"]) if len(metrics["mos"]) > 0 else 0.0
+            "average_cer": sum(metrics["cer"]) / len(metrics["cer"]) if len(metrics["cer"]) > 0 else None,
+            "average_mos": sum(metrics["mos"]) / len(metrics["mos"]) if len(metrics["mos"]) > 0 else None,
         } for lang, metrics in summary.items()
     }).T
     print(summary_df.sort_values(by="average_cer"))
