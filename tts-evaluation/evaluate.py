@@ -10,7 +10,6 @@ from transformers import (
     AutoProcessor
 )
 from transformers.utils import logging as hf_logging
-from neucodec import NeuCodec
 import xxhash
 import argparse
 import os
@@ -28,6 +27,7 @@ import multiprocessing as mp
 from functools import partial
 import gc
 import time
+from torch.nn.utils.rnn import pad_sequence
 
 hf_logging.set_verbosity_error()  # Suppress warnings from transformers library
 
@@ -39,6 +39,10 @@ class BaseTTSModel:
                  sample_size: int = 3, ):
         pass 
     
+    @staticmethod
+    def supported_languages() -> Union[list[str], None]:
+        return None
+    
     def generate(self, *args, **kwargs):
         raise NotImplementedError("Subclasses should implement this method.")
 class ScicomTTSModel(BaseTTSModel): 
@@ -48,6 +52,10 @@ class ScicomTTSModel(BaseTTSModel):
                  sampling: bool = False, 
                  sample_size: int = 1, 
                  attn_implementation: str = "kernels-community/flash-attn3"):
+        try: 
+            from neucodec import NeuCodec
+        except Exception as e: 
+            raise ImportError("Failed to import NeuCodec. Please ensure neucodec is installed.") from e
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             attn_implementation=attn_implementation, 
@@ -135,15 +143,17 @@ class QwenTTSModel(BaseTTSModel):
                  model_name: str, 
                  device: torch.device, 
                  sampling: bool = False, 
-                 sample_size: int = 3, ): 
+                 sample_size: int = 3, 
+                 attn_implementation: str = 'eager'): 
         try:
             from qwen_tts import Qwen3TTSModel
         except ImportError:
             raise ImportError("QwenTTSModel requires the qwen-tts package. Please install it first.")
-        self.model = Qwen3TTSModel.from_pretrained(
+        self.model:Qwen3TTSModel = Qwen3TTSModel.from_pretrained(
             model_name,
-            device_map=device.type,
+            device_map=device,
             dtype=torch.bfloat16,
+            attn_implementation=attn_implementation
         )
         self.sampling = sampling
         self.sample_size = sample_size
@@ -163,7 +173,8 @@ class QwenTTSModel(BaseTTSModel):
         }
         return mapping.get(lang, lang)
     
-    def supported_languages(self):
+    @staticmethod
+    def supported_languages():
         return [
             'zh', 'en', 'fr', 'de', 'it', 'ja', 'ko', 'pt', 'ru', 'es'
         ]
@@ -171,7 +182,7 @@ class QwenTTSModel(BaseTTSModel):
     def generate(self,  
                  target_text: Union[str, list[str]],
                  description: Union[str, list[str], None],
-                 save_paths: list[str], 
+                 save_paths: str, 
                  speaker_name: str = "Vivian",
                  **kwargs):
         
@@ -179,48 +190,33 @@ class QwenTTSModel(BaseTTSModel):
         if lang not in self.supported_languages():
             return
         
-        _target_text = []
-        _description = []
-        _speaker_name = [ speaker_name ]
-        if self.sampling: 
-            for text in target_text:
-                _target_text.extend([text] * self.sample_size)
-            for desc in description:
-                _description.extend([desc] * self.sample_size)
-            _speaker_name = _speaker_name * len(target_text) * self.sample_size
-            _language = [self.mapped_language(lang)] * len(target_text) * self.sample_size
-        else: 
-            _target_text = target_text
-            _speaker_name = _speaker_name * len(target_text)
-            _description = description
-            _language = [self.mapped_language(lang)] * len(target_text)
-
-        wavs, sr = self.model.generate_custom_voice(
-            text=_target_text,
-            language=_language,
-            speaker=_speaker_name,
-            instruct=_description
+        wav, sr = self.model.generate_custom_voice(
+            text=target_text,
+            language=self.mapped_language(lang),
+            speaker=speaker_name,
+            instruct=description
         )
         if sr != 24000:
             raise ValueError(f"Expected sample rate of 24000, but got {sr}. Resampling is needed")
         
-        for wav, save_path in zip(wavs, save_paths):
-            sf.write(save_path, wav, samplerate=sr)
+        sf.write(save_paths, wav[0], samplerate=sr)
 class ChatterBox(BaseTTSModel):
     def __init__(self, 
                  model_name: str, 
                  device: torch.device, 
                  sampling: bool = False, 
-                 sample_size: int = 3, ):
+                 sample_size: int = 3, 
+                 **kwargs):
         try:
             from chatterbox.mtl_tts import ChatterboxMultilingualTTS
         except ImportError:
             raise ImportError("ChatterBox model requires the chatterbox-tts package. Please install it first.")
-        self.model = ChatterboxMultilingualTTS.from_pretrained(device=device.type)
+        self.model = ChatterboxMultilingualTTS.from_pretrained(device=device)
         self.sampling = sampling
         self.sample_size = sample_size
     
-    def supported_languages(self):
+    @staticmethod
+    def supported_languages():
         # Arabic (ar) • Danish (da) • German (de) • Greek (el) • 
         # English (en) • Spanish (es) • Finnish (fi) • French (fr) • 
         # Hebrew (he) • Hindi (hi) • Italian (it) • Japanese (ja) • Korean (ko) • 
@@ -233,9 +229,9 @@ class ChatterBox(BaseTTSModel):
         return supported_languages
 
     def generate(self,  
-                 target_text: Union[str, list[str]],
-                 description: Union[str, list[str]],
-                 save_paths: list[str], 
+                 target_text: str,
+                 save_paths: str, 
+                 description: Union[str, None] = None,
                  **kwargs):
         """
         Eg.
@@ -246,23 +242,19 @@ class ChatterBox(BaseTTSModel):
         """
         if isinstance(target_text, list) and len(target_text) > 1:
             print("ChatterBox model currently only supports single inference. Falling back to single inference mode.")
-            
+
         lang = kwargs.get("language", "en")
         if lang not in self.supported_languages():
             return 
-        
-        for i, text in enumerate(target_text):
-            if self.sampling:
-                for j in range(self.sample_size):
-                    wav = self.model.generate(text, language_id=lang)
-                    if self.model.sr != 24000:
-                        raise ValueError(f"Expected sample rate of 24000, but got {self.model_sr}. Resampling is needed")
-                    sf.write(save_paths[i * self.sample_size + j], wav[0].cpu().numpy(), samplerate=self.model.sr)
-            else:
-                wav = self.model.generate(text, language_id=lang)
-                if self.model.sr != 24000:
-                    raise ValueError(f"Expected sample rate of 24000, but got {self.model_sr}. Resampling is needed")
-                sf.write(save_paths[i], wav[0].cpu().numpy(), samplerate=self.model.sr)
+
+        try:
+            wav = self.model.generate(target_text, language_id=lang)
+            if self.model.sr != 24000:
+                raise ValueError(f"Expected sample rate of 24000, but got {self.model_sr}. Resampling is needed")
+            sf.write(save_paths, wav[0].cpu().numpy(), samplerate=self.model.sr)
+        except Exception as e: 
+            print(f"Error generating speech: {e} | Text: {target_text} | Language: {lang} | Output Path: {save_paths}")
+
 
 
 MODEL_MAPPING = {
@@ -283,7 +275,7 @@ class Dataset(BaseDataset):
     def __init__(self, 
                  dataset_name: str, 
                  length: int = None, 
-                 use_hash_id: bool = True):
+                 filter_langs = None):
         self.length = length
         self.ds = load_dataset(
             dataset_name, 
@@ -295,10 +287,9 @@ class Dataset(BaseDataset):
         self.__filter_by_language()
         self.ds = self.ds.remove_columns(["source_text", "upvotes", "speaker_id", "audio_filename"])
         self.ds = self.ds.rename_column("target_text", "text")
-        if use_hash_id:
-            self.ds = self.ds.map(lambda sample: {"id": self.__hash_text(sample["text"])}, batched=False)
-        else: 
-            self.ds = self.ds.map(lambda _, id : {"id": id}, with_indices=True, batched=False)
+        self.ds = self.ds.map(lambda sample: {"id": self.__hash_text(sample["text"])}, batched=False)
+        if filter_langs is not None:
+            self.ds = self.ds.filter(lambda sample: sample["language"] in filter_langs)
         
     @staticmethod
     def __hash_text(text: str)->str: 
@@ -386,6 +377,7 @@ def tts(
     model_name: str,
     output_dir: str, 
     sample_size: int = 1,
+    batch_size: int = 1,
     attn_implementation: str = "kernels-community/flash-attn3",
 ):
     device = f"cuda:{cuda_device}"
@@ -412,11 +404,12 @@ def tts(
                     target_text=target_text,
                     description=description,
                     save_paths=output_path, 
-                    language=languages
+                    language=lang
                 )
                 pbar.update(1)
-                with counter.get_lock():
-                    counter.value += 1
+                if counter is not None:
+                    with counter.get_lock():
+                        counter.value += 1
 
     # clear GPU memory and codec model
     model = None
@@ -431,6 +424,7 @@ def stt(
     counter: mp.Value,
     output_dir: str, 
     sample_size: int = 1,
+    batch_size: int = 1, 
     attn_implementation: str = "kernels-community/flash-attn3",
 ):
     device = f"cuda:{cuda_device}"
@@ -444,6 +438,10 @@ def stt(
     sampler = T.Resample(orig_freq=24000, new_freq=16000)
     
     with tqdm(total=len(dataset)*sample_size, desc=f"[PID{process_id}:Rank{cuda_device}] Transcription", position=process_id) as pbar:
+        batches_input = []
+        batches_language = None
+        batches_output_paths = []
+
         for start in range(0, len(dataset)):
             samples = dataset[start:start+1]
             save_paths = []
@@ -459,23 +457,35 @@ def stt(
                 audio = torch.from_numpy(audio).to(torch.float32)
             
                 audio = sampler(audio) # (T')
-            
+
+                batches_input.append(audio)
+                batches_output_paths.append(save_path)
+                batches_language = language
+                next_lang = dataset[start+1]['language'] if start+1 < len(dataset) else None
+                if len(batches_input) < batch_size and next_lang == batches_language:
+                    continue
+                
                 inputs = processor(
-                    audio.numpy()[None, :], # (1, T') 
+                    pad_sequence(batches_input, batch_first=True).numpy(), # (B, T') 
                     sampling_rate=16000, 
                     return_tensors="pt", 
                 ).to(device)
-            
+
                 with torch.no_grad(), torch.autocast(device_type=device):
                     predicted_ids = model.generate(**inputs, language=language, task="transcribe")
                 
-                transcription = processor.batch_decode(predicted_ids.cpu().numpy(), skip_special_tokens=True)[0]
+                transcriptions = processor.batch_decode(predicted_ids.cpu().numpy(), skip_special_tokens=True)
                 
-                with open(save_path, "w") as f:
-                    f.write(transcription.strip())
-                pbar.update(1)
-                with counter.get_lock():
-                    counter.value += 1
+                for transcription, save_path in zip(transcriptions, batches_output_paths):
+                    with open(save_path, "w") as f:
+                        f.write(transcription.strip())
+                pbar.update(len(batches_input))
+                if counter is not None:
+                    with counter.get_lock():
+                        counter.value += len(batches_input)
+                batches_input = []
+                batches_output_paths = []
+                batches_language = None
     
     model = None 
     gc.collect()
@@ -489,11 +499,12 @@ def evaluate_mos(
     counter: mp.Value,
     output_dir: str, 
     sample_size: int = 1, 
+    batch_size: int = 1,
     attn_implementation: str = "kernels-community/flash-attn3",
 ):
     device = f"cuda:{cuda_device}"
     model = utmosv2.create_model(pretrained=True, device=device)
-    
+
     with tqdm(total=len(dataset)*sample_size, desc=f"[PID{process_id}:Rank{cuda_device}] MOS evaluation", position=process_id) as pbar:
         for start in range(0, len(dataset)):
             samples = dataset[start:start+1]
@@ -506,9 +517,15 @@ def evaluate_mos(
             for audio_path, save_path in zip(audio_paths, save_paths):
                 if os.path.exists(save_path):
                     pbar.update(1)
+                    with counter.get_lock():
+                        counter.value += 1
                     continue
 
-                mos = model.predict(input_path=audio_path, num_workers=0, verbose=False)
+                waveform, sr = sf.read(audio_path)
+                mos = model.predict(data=torch.tensor(waveform, dtype=torch.float32), 
+                                    sr=sr,
+                                    num_workers=0, 
+                                    verbose=False).numpy()[0]
                 with open(save_path, "w") as f:
                     f.write(f"{mos:.5f}")
                 pbar.update(1)
@@ -520,7 +537,7 @@ def evaluate_mos(
     torch.cuda.empty_cache()
 
 def track_progress(counter: mp.Value, total: int, position: int):
-    with tqdm(total=total, desc="Overall Progress", position=position, unit="sample") as pbar:
+    with tqdm(total=total, desc="Overall Progress", position=position, unit="sample", smoothing=0) as pbar:
         while True:
             with counter.get_lock():
                 current = counter.value
@@ -535,6 +552,7 @@ def parallel_eval(
     proc: Literal["tts", "stt", "mos"], 
     sample_size: int, 
     output_dir: str, 
+    batch_size: int = 1,
     model_name: str = None,
     attn_implementation: str = "kernels-community/flash-attn3",
 ):
@@ -566,6 +584,7 @@ def parallel_eval(
         "output_dir": output_dir,
         "sample_size": sample_size,
         "attn_implementation": attn_implementation,
+        "batch_size": batch_size,
     }
     if proc == "tts":
         run_func_kwargs["model_name"] = model_name
@@ -602,18 +621,24 @@ def summarize(dataset: Dataset, output_dir: str, sample_size: int, skip_mos: boo
                 
             for i in range(sample_size):
                 trans_path = os.path.join(output_dir, f"trans_{lang}_{sample['id']}_{i}.txt")
-                if os.path.exists(trans_path):
-                    with open(trans_path, "r") as f:
-                        transcription = f.read().strip()
-                    cer_score = min(cer(sample["text"], transcription), 1.0)
-                    summary[lang]["cer"].append(cer_score)
                 
+                try:
+                    if os.path.exists(trans_path):
+                        with open(trans_path, "r") as f:
+                            transcription = f.read().strip()
+                        cer_score = min(cer(sample["text"], transcription), 1.0)
+                        summary[lang]["cer"].append(cer_score)
+                except:
+                    raise ValueError(f"Content of transcription file is invalid: {trans_path}")
                 
                 mos_path = os.path.join(output_dir, f"mos_{lang}_{sample['id']}_{i}.txt")
-                if os.path.exists(mos_path) and not skip_mos:
-                    with open(mos_path, "r") as f:
-                        mos = float(f.read().strip())
-                    summary[lang]["mos"].append(mos)
+                try:
+                    if os.path.exists(mos_path) and not skip_mos:
+                        with open(mos_path, "r") as f:
+                            mos = float(f.read().strip())
+                        summary[lang]["mos"].append(mos)
+                except: 
+                    raise ValueError(f"Content of mos file is invalid: {mos_path}")
                 pbar.update(1)
 
     print("\nEvaluation Summary:")
@@ -625,7 +650,8 @@ def summarize(dataset: Dataset, output_dir: str, sample_size: int, skip_mos: boo
     }).T
     print(summary_df.sort_values(by="average_cer"))
     summary_df.sort_values(by="average_cer").to_csv(os.path.join(output_dir, f"eval_summary.csv"), sep="\t")
-    
+    return summary_df
+
 if __name__ == "__main__": 
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, default="Scicom-intl/Multilingual-Expressive-TTS-1.7B")
@@ -633,6 +659,7 @@ if __name__ == "__main__":
     parser.add_argument("--output_dir", type=str, default="./output", help="Directory to save generated audio")
     parser.add_argument("--length", type=int, default=None, help="Subset of dataset for dry run")
     parser.add_argument("--sample_size", type=int, default=3, help="Number of samples to generate for each input")
+    parser.add_argument("--batch_size", type=int, default=1, help="Batch size for evaluation")
     parser.add_argument("--skip_mos", action="store_true", help="Whether to skip MOS evaluation")
     parser.add_argument("--attn_implementation", type=str, default="kernels-community/flash-attn3", help="Attention implementation for TTS model")
     parser.add_argument("--replicate", type=int, default=1)
@@ -648,11 +675,12 @@ if __name__ == "__main__":
         devices = list(range(torch.cuda.device_count()))
     else:
         devices = [d.strip() for d in devices.split(',')]
-    
+
     devices = devices * args.replicate
     process_id = list(range(len(devices)))
 
-    dataset = Dataset(args.dataset, length=args.length)
+    filter_langs = MODEL_MAPPING[args.model_name].supported_languages()
+    dataset = Dataset(args.dataset, length=args.length, filter_langs=filter_langs)
     print(f"Using devices {devices} for evaluation with model {args.model_name} on dataset {args.dataset} | total sample: {len(dataset)}")
 
     # TODO: auto calculate the replicate (but only you got the time, not important)
@@ -675,6 +703,7 @@ if __name__ == "__main__":
         sample_size=args.sample_size,
         output_dir=args.output_dir,
         model_name=args.model_name,
+        batch_size=args.batch_size,
         attn_implementation=args.attn_implementation,
     )
 
@@ -687,6 +716,7 @@ if __name__ == "__main__":
             sample_size=args.sample_size,
             output_dir=args.output_dir,
             model_name=args.model_name,
+            batch_size=args.batch_size,
             attn_implementation=args.attn_implementation,
         )
 
