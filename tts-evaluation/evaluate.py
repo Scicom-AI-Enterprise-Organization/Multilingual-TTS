@@ -256,7 +256,6 @@ class ChatterBox(BaseTTSModel):
             print(f"Error generating speech: {e} | Text: {target_text} | Language: {lang} | Output Path: {save_paths}")
 
 
-
 MODEL_MAPPING = {
     "Scicom-intl/Multilingual-Expressive-TTS-1.7B" : ScicomTTSModel,
     "Scicom-intl/Multilingual-Expressive-TTS-0.6B" : ScicomTTSModel,
@@ -398,6 +397,9 @@ def tts(
             for output_path, lang, target_text, description in zip(save_paths, languages, target_texts, descriptions):
                 if os.path.exists(output_path):
                     pbar.update(1)
+                    if counter is not None:
+                        with counter.get_lock():
+                            counter.value += 1
                     continue
 
                 model.generate(
@@ -453,32 +455,35 @@ def stt(
             # load audio and preprocess
             languages = repeat_interleave(samples['language'], sample_size)
             for audio_path, save_path, language in zip(audio_paths, save_paths, languages):
-                audio, sr = sf.read(audio_path)
-                audio = torch.from_numpy(audio).to(torch.float32)
-            
-                audio = sampler(audio) # (T')
+                try:
+                    audio, sr = sf.read(audio_path)
+                    audio = torch.from_numpy(audio).to(torch.float32)
+                
+                    audio = sampler(audio) # (T')
 
-                batches_input.append(audio)
-                batches_output_paths.append(save_path)
-                batches_language = language
-                next_lang = dataset[start+1]['language'] if start+1 < len(dataset) else None
-                if len(batches_input) < batch_size and next_lang == batches_language:
-                    continue
-                
-                inputs = processor(
-                    pad_sequence(batches_input, batch_first=True).numpy(), # (B, T') 
-                    sampling_rate=16000, 
-                    return_tensors="pt", 
-                ).to(device)
+                    batches_input.append(audio)
+                    batches_output_paths.append(save_path)
+                    batches_language = language
+                    next_lang = dataset[start+1]['language'] if start+1 < len(dataset) else None
+                    if len(batches_input) < batch_size and next_lang == batches_language:
+                        continue
+                    
+                    inputs = processor(
+                        pad_sequence(batches_input, batch_first=True).numpy(), # (B, T') 
+                        sampling_rate=16000, 
+                        return_tensors="pt", 
+                    ).to(device)
 
-                with torch.no_grad(), torch.autocast(device_type=device):
-                    predicted_ids = model.generate(**inputs, language=language, task="transcribe")
-                
-                transcriptions = processor.batch_decode(predicted_ids.cpu().numpy(), skip_special_tokens=True)
-                
-                for transcription, save_path in zip(transcriptions, batches_output_paths):
-                    with open(save_path, "w") as f:
-                        f.write(transcription.strip())
+                    with torch.no_grad(), torch.autocast(device_type=device):
+                        predicted_ids = model.generate(**inputs, language=language, task="transcribe")
+                    
+                    transcriptions = processor.batch_decode(predicted_ids.cpu().numpy(), skip_special_tokens=True)
+                    
+                    for transcription, save_path in zip(transcriptions, batches_output_paths):
+                        with open(save_path, "w") as f:
+                            f.write(transcription.strip())
+                except Exception as e: 
+                    print(f"Error processing audio: {e} | Audio path: {audio_path}")
                 pbar.update(len(batches_input))
                 if counter is not None:
                     with counter.get_lock():
@@ -520,14 +525,17 @@ def evaluate_mos(
                     with counter.get_lock():
                         counter.value += 1
                     continue
-
-                waveform, sr = sf.read(audio_path)
-                mos = model.predict(data=torch.tensor(waveform, dtype=torch.float32), 
-                                    sr=sr,
-                                    num_workers=0, 
-                                    verbose=False).numpy()[0]
-                with open(save_path, "w") as f:
-                    f.write(f"{mos:.5f}")
+                
+                try:
+                    waveform, sr = sf.read(audio_path)
+                    mos = model.predict(data=torch.tensor(waveform, dtype=torch.float32), 
+                                        sr=sr,
+                                        num_workers=0, 
+                                        verbose=False).numpy()[0]
+                    with open(save_path, "w") as f:
+                        f.write(f"{mos:.5f}")
+                except Exception as e:
+                    print(f"Error processing audio: {e} | Audio path: {audio_path}")
                 pbar.update(1)
                 with counter.get_lock():
                     counter.value += 1
@@ -661,6 +669,8 @@ if __name__ == "__main__":
     parser.add_argument("--sample_size", type=int, default=3, help="Number of samples to generate for each input")
     parser.add_argument("--batch_size", type=int, default=1, help="Batch size for evaluation")
     parser.add_argument("--skip_mos", action="store_true", help="Whether to skip MOS evaluation")
+    parser.add_argument("--skip_tts", action="store_true", help="Whether to skip TTS evaluation")
+    parser.add_argument("--skip_stt", action="store_true", help="Whether to skip STT evaluation")
     parser.add_argument("--attn_implementation", type=str, default="kernels-community/flash-attn3", help="Attention implementation for TTS model")
     parser.add_argument("--replicate", type=int, default=1)
     args = parser.parse_args()
@@ -685,27 +695,29 @@ if __name__ == "__main__":
 
     # TODO: auto calculate the replicate (but only you got the time, not important)
     # 1. Run TTS
-    parallel_eval(
-        dataset=dataset,
-        devices=devices,
-        proc="tts",
-        sample_size=args.sample_size,
-        output_dir=args.output_dir,
-        model_name=args.model_name,
-        attn_implementation=args.attn_implementation,
-    )
+    if not args.skip_tts:
+        parallel_eval(
+            dataset=dataset,
+            devices=devices,
+            proc="tts",
+            sample_size=args.sample_size,
+            output_dir=args.output_dir,
+            model_name=args.model_name,
+            attn_implementation=args.attn_implementation,
+        )
 
     # 2. Run STT
-    parallel_eval(
-        dataset=dataset,
-        devices=devices,
-        proc="stt",
-        sample_size=args.sample_size,
-        output_dir=args.output_dir,
-        model_name=args.model_name,
-        batch_size=args.batch_size,
-        attn_implementation=args.attn_implementation,
-    )
+    if not args.skip_stt:
+        parallel_eval(
+            dataset=dataset,
+            devices=devices,
+            proc="stt",
+            sample_size=args.sample_size,
+            output_dir=args.output_dir,
+            model_name=args.model_name,
+            batch_size=args.batch_size,
+            attn_implementation=args.attn_implementation,
+        )
 
     # 3. Run MOS evaluation
     if not args.skip_mos:
