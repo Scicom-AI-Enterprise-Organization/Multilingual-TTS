@@ -1,0 +1,403 @@
+\begin{thebibliography}{32}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Ardila et~al.(2020)Ardila, Branson, Davis, Henretty, Kohler, Meyer,
+  Morais, Saunders, Tyers, and
+  Weber]{ardila2020commonvoicemassivelymultilingualspeech}
+Rosana Ardila, Megan Branson, Kelly Davis, Michael Henretty, Michael Kohler,
+  Josh Meyer, Reuben Morais, Lindsay Saunders, Francis~M. Tyers, and Gregor
+  Weber.
+\newblock Common voice: A massively-multilingual speech corpus, 2020.
+\newblock URL \url{https://arxiv.org/abs/1912.06670}.
+
+\bibitem[Ashraf(2024)]{ashraf2024ctcforcedaligner}
+Mahmoud Ashraf.
+\newblock ctc-forced-aligner: Text to speech alignment using ctc forced
+  alignment, 2024.
+\newblock URL \url{https://github.com/MahmoudAshraf97/ctc-forced-aligner}.
+
+\bibitem[Baba et~al.(2024)Baba, Nakata, Saito, and
+  Saruwatari]{baba2024t05voicemoschallenge2024}
+Kaito Baba, Wataru Nakata, Yuki Saito, and Hiroshi Saruwatari.
+\newblock The t05 system for the voicemos challenge 2024: Transfer learning
+  from deep image classifier to naturalness mos prediction of high-quality
+  synthetic speech, 2024.
+\newblock URL \url{https://arxiv.org/abs/2409.09305}.
+
+\bibitem[Chu et~al.(2024)Chu, Xu, Yang, Wei, Wei, Guo, Leng, Lv, He, Lin, Zhou,
+  and Zhou]{chu2024qwen2audiotechnicalreport}
+Yunfei Chu, Jin Xu, Qian Yang, Haojie Wei, Xipin Wei, Zhifang Guo, Yichong
+  Leng, Yuanjun Lv, Jinzheng He, Junyang Lin, Chang Zhou, and Jingren Zhou.
+\newblock Qwen2-audio technical report, 2024.
+\newblock URL \url{https://arxiv.org/abs/2407.10759}.
+
+\bibitem[Dao(2023)]{dao2023flashattention2fasterattentionbetter}
+Tri Dao.
+\newblock Flashattention-2: Faster attention with better parallelism and work
+  partitioning, 2023.
+\newblock URL \url{https://arxiv.org/abs/2307.08691}.
+
+\bibitem[Du et~al.(2024)Du, Wang, Chen, Chu, Gao, Li, Hu, Zhou, Xu, Ma, Wang,
+  Zheng, Zhou, Yan, and Zhang]{du2024lauragptlistenattendunderstand}
+Zhihao Du, Jiaming Wang, Qian Chen, Yunfei Chu, Zhifu Gao, Zerui Li, Kai Hu,
+  Xiaohuan Zhou, Jin Xu, Ziyang Ma, Wen Wang, Siqi Zheng, Chang Zhou, Zhijie
+  Yan, and Shiliang Zhang.
+\newblock Lauragpt: Listen, attend, understand, and regenerate audio with gpt,
+  2024.
+\newblock URL \url{https://arxiv.org/abs/2310.04673}.
+
+\bibitem[Guo et~al.(2025)Guo, Li, Wang, Li, Shao, Zhang, Du, Chen, Liu, and
+  Yu]{guo2025recentadvancesdiscretespeech}
+Yiwei Guo, Zhihan Li, Hankun Wang, Bohan Li, Chongtian Shao, Hanglei Zhang,
+  Chenpeng Du, Xie Chen, Shujie Liu, and Kai Yu.
+\newblock Recent advances in discrete speech tokens: A review, 2025.
+\newblock URL \url{https://arxiv.org/abs/2502.06490}.
+
+\bibitem[He et~al.(2024)He, Shang, Wang, Li, Gu, Hua, Liu, Yang, Li, Shi, Wang,
+  Chen, Zhang, and Wu]{emilia}
+Haorui He, Zengqiang Shang, Chaoren Wang, Xuyuan Li, Yicheng Gu, Hua Hua, Liwei
+  Liu, Chen Yang, Jiaqi Li, Peiyang Shi, Yuancheng Wang, Kai Chen, Pengyuan
+  Zhang, and Zhizheng Wu.
+\newblock Emilia: An extensive, multilingual, and diverse speech dataset for
+  large-scale speech generation.
+\newblock In \emph{Proc.~of SLT}, 2024.
+
+\bibitem[Hsu et~al.(2025)Hsu, Dai, Kothapalli, Song, Tang, Zhu, Shimizu, Sahni,
+  Ning, and Chen]{hsu2025ligerkernelefficienttriton}
+Pin-Lun Hsu, Yun Dai, Vignesh Kothapalli, Qingquan Song, Shao Tang, Siyu Zhu,
+  Steven Shimizu, Shivam Sahni, Haowen Ning, and Yanning Chen.
+\newblock Liger kernel: Efficient triton kernels for llm training, 2025.
+\newblock URL \url{https://arxiv.org/abs/2410.10989}.
+
+\bibitem[Hsu et~al.(2021)Hsu, Bolte, Tsai, Lakhotia, Salakhutdinov, and
+  Mohamed]{hsu2021hubertselfsupervisedspeechrepresentation}
+Wei-Ning Hsu, Benjamin Bolte, Yao-Hung~Hubert Tsai, Kushal Lakhotia, Ruslan
+  Salakhutdinov, and Abdelrahman Mohamed.
+\newblock Hubert: Self-supervised speech representation learning by masked
+  prediction of hidden units, 2021.
+\newblock URL \url{https://arxiv.org/abs/2106.07447}.
+
+\bibitem[Julian et~al.(2025)Julian, Beeson, Konathala, Ulin, and
+  Gao]{julian2025finitescalarquantizationenables}
+Harry Julian, Rachel Beeson, Lohith Konathala, Johanna Ulin, and Jiameng Gao.
+\newblock Finite scalar quantization enables redundant and transmission-robust
+  neural audio compression at low bit-rates, 2025.
+\newblock URL \url{https://arxiv.org/abs/2509.09550}.
+
+\bibitem[Koluguri et~al.(2025)Koluguri, Sekoyan, Zelenfroynd, Meister, Ding,
+  Kostandian, Huang, Karpov, Balam, Lavrukhin, Peng, Papi, Gaido, Brutti, and
+  Ginsburg]{koluguri2025granaryspeechrecognitiontranslation}
+Nithin~Rao Koluguri, Monica Sekoyan, George Zelenfroynd, Sasha Meister,
+  Shuoyang Ding, Sofia Kostandian, He~Huang, Nikolay Karpov, Jagadeesh Balam,
+  Vitaly Lavrukhin, Yifan Peng, Sara Papi, Marco Gaido, Alessio Brutti, and
+  Boris Ginsburg.
+\newblock Granary: Speech recognition and translation dataset in 25 european
+  languages, 2025.
+\newblock URL \url{https://arxiv.org/abs/2505.13404}.
+
+\bibitem[Kwon et~al.(2023)Kwon, Li, Zhuang, Sheng, Zheng, Yu, Gonzalez, Zhang,
+  and Stoica]{kwon2023efficientmemorymanagementlarge}
+Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin Zheng, Cody~Hao Yu,
+  Joseph~E. Gonzalez, Hao Zhang, and Ion Stoica.
+\newblock Efficient memory management for large language model serving with
+  pagedattention, 2023.
+\newblock URL \url{https://arxiv.org/abs/2309.06180}.
+
+\bibitem[Liu et~al.(2025)Liu, Ehrenberg, Lo, Denoix, Barreau, Lample, Delignon,
+  Chandu, von Platen, Muddireddy, Gandhi, Ghosh, Mishra, Foubert, Rastogi,
+  Yang, Jiang, Sablayrolles, Héliou, Martin, Agarwal, Roux, Darcet, Mensch,
+  Bout, Rozière, Monicault, Bamford, Wallenwein, Renaudin, Lanfranchi, Dabert,
+  Chaplot, Mizelle, de~las Casas, Chane-Sane, Fugier, Hanna, Berrada, Delerce,
+  Guinet, Novikov, Martin, Jaju, Ludziejewski, Rute, Chabran, Chudnovsky,
+  Studnia, Barmentlo, Amar, Roberts, Denize, Saxena, Yadav, Khandelwal, Jain,
+  Lavaud, Blier, Zhao, Martin, Saulnier, Gao, Pellat, Guillaumin, Felardos,
+  Dinot, Darrin, Augustin, Seznec, Gupta, Raghuraman, Duchenne, Wang, Saffer,
+  Jacob, Wambergue, Kurylowicz, Chagniot, Stock, Agrawal, Delacourt, Sauvestre,
+  Soletskyi, Vaze, Subramanian, Garg, Dalal, Gandhi, Aithal, Antoniak, Scao,
+  Schueller, Lavril, Robert, Wang, Lacroix, Bewley, Nemychnikova, Paltz,
+  Richard, Li, Marshall, Zhang, Wan, and Tang]{liu2025voxtral}
+Alexander~H. Liu, Andy Ehrenberg, Andy Lo, Clément Denoix, Corentin Barreau,
+  Guillaume Lample, Jean-Malo Delignon, Khyathi~Raghavi Chandu, Patrick von
+  Platen, Pavankumar~Reddy Muddireddy, Sanchit Gandhi, Soham Ghosh, Srijan
+  Mishra, Thomas Foubert, Abhinav Rastogi, Adam Yang, Albert~Q. Jiang,
+  Alexandre Sablayrolles, Amélie Héliou, Amélie Martin, Anmol Agarwal,
+  Antoine Roux, Arthur Darcet, Arthur Mensch, Baptiste Bout, Baptiste Rozière,
+  Baudouin~De Monicault, Chris Bamford, Christian Wallenwein, Christophe
+  Renaudin, Clémence Lanfranchi, Darius Dabert, Devendra~Singh Chaplot, Devon
+  Mizelle, Diego de~las Casas, Elliot Chane-Sane, Emilien Fugier, Emma~Bou
+  Hanna, Gabrielle Berrada, Gauthier Delerce, Gauthier Guinet, Georgii Novikov,
+  Guillaume Martin, Himanshu Jaju, Jan Ludziejewski, Jason Rute, Jean-Hadrien
+  Chabran, Jessica Chudnovsky, Joachim Studnia, Joep Barmentlo, Jonas Amar,
+  Josselin~Somerville Roberts, Julien Denize, Karan Saxena, Karmesh Yadav,
+  Kartik Khandelwal, Kush Jain, Lélio~Renard Lavaud, Léonard Blier, Lingxiao
+  Zhao, Louis Martin, Lucile Saulnier, Luyu Gao, Marie Pellat, Mathilde
+  Guillaumin, Mathis Felardos, Matthieu Dinot, Maxime Darrin, Maximilian
+  Augustin, Mickaël Seznec, Neha Gupta, Nikhil Raghuraman, Olivier Duchenne,
+  Patricia Wang, Patryk Saffer, Paul Jacob, Paul Wambergue, Paula Kurylowicz,
+  Philomène Chagniot, Pierre Stock, Pravesh Agrawal, Rémi Delacourt, Romain
+  Sauvestre, Roman Soletskyi, Sagar Vaze, Sandeep Subramanian, Saurabh Garg,
+  Shashwat Dalal, Siddharth Gandhi, Sumukh Aithal, Szymon Antoniak, Teven~Le
+  Scao, Thibault Schueller, Thibaut Lavril, Thomas Robert, Thomas Wang,
+  Timothée Lacroix, Tom Bewley, Valeriia Nemychnikova, Victor Paltz, Virgile
+  Richard, Wen-Ding Li, William Marshall, Xuanyu Zhang, Yihan Wan, and Yunhao
+  Tang.
+\newblock Voxtral, 2025.
+\newblock URL \url{https://arxiv.org/abs/2507.13264}.
+
+\bibitem[Liu et~al.(2024)Liu, Guo, Xu, Lv, Chu, Zhao, and
+  Lin]{liu2024analyzingmitigatinginconsistencydiscrete}
+Wenrui Liu, Zhifang Guo, Jin Xu, Yuanjun Lv, Yunfei Chu, Zhou Zhao, and Junyang
+  Lin.
+\newblock Analyzing and mitigating inconsistency in discrete audio tokens for
+  neural codec language models, 2024.
+\newblock URL \url{https://arxiv.org/abs/2409.19283}.
+
+\bibitem[Ma et~al.(2024)Ma, Song, Du, Cong, Chen, Wang, Wang, and
+  Chen]{ma2024languagemodellistenspeaking}
+Ziyang Ma, Yakun Song, Chenpeng Du, Jian Cong, Zhuo Chen, Yuping Wang, Yuxuan
+  Wang, and Xie Chen.
+\newblock Language model can listen while speaking, 2024.
+\newblock URL \url{https://arxiv.org/abs/2408.02622}.
+
+\bibitem[Microsoft et~al.(2025)Microsoft, :, Abouelenin, Ashfaq, Atkinson,
+  Awadalla, Bach, Bao, Benhaim, Cai, Chaudhary, Chen, Chen, Chen, Chen, Chen,
+  Chen, ling Chen, Dai, Dai, Fan, Gao, Gao, Garg, Goswami, Hao, Hendy, Hu, Jin,
+  Khademi, Kim, Kim, Lee, Li, Li, Liang, Lin, Lin, Liu, Liu, Lopez, Luo, Madan,
+  Mazalov, Mitra, Mousavi, Nguyen, Pan, Perez-Becker, Platin, Portet, Qiu, Ren,
+  Ren, Roy, Shang, Shen, Singhal, Som, Song, Sych, Vaddamanu, Wang, Wang, Wang,
+  Wu, Xu, Xu, Yang, Yang, Yu, Zabir, Zhang, Zhang, Zhang, and
+  Zhou]{microsoft2025phi4minitechnicalreportcompact}
+Microsoft, :, Abdelrahman Abouelenin, Atabak Ashfaq, Adam Atkinson, Hany
+  Awadalla, Nguyen Bach, Jianmin Bao, Alon Benhaim, Martin Cai, Vishrav
+  Chaudhary, Congcong Chen, Dong Chen, Dongdong Chen, Junkun Chen, Weizhu Chen,
+  Yen-Chun Chen, Yi~ling Chen, Qi~Dai, Xiyang Dai, Ruchao Fan, Mei Gao, Min
+  Gao, Amit Garg, Abhishek Goswami, Junheng Hao, Amr Hendy, Yuxuan Hu, Xin Jin,
+  Mahmoud Khademi, Dongwoo Kim, Young~Jin Kim, Gina Lee, Jinyu Li, Yunsheng Li,
+  Chen Liang, Xihui Lin, Zeqi Lin, Mengchen Liu, Yang Liu, Gilsinia Lopez,
+  Chong Luo, Piyush Madan, Vadim Mazalov, Arindam Mitra, Ali Mousavi, Anh
+  Nguyen, Jing Pan, Daniel Perez-Becker, Jacob Platin, Thomas Portet, Kai Qiu,
+  Bo~Ren, Liliang Ren, Sambuddha Roy, Ning Shang, Yelong Shen, Saksham Singhal,
+  Subhojit Som, Xia Song, Tetyana Sych, Praneetha Vaddamanu, Shuohang Wang,
+  Yiming Wang, Zhenghao Wang, Haibin Wu, Haoran Xu, Weijian Xu, Yifan Yang,
+  Ziyi Yang, Donghan Yu, Ishmam Zabir, Jianwen Zhang, Li~Lyna Zhang, Yunan
+  Zhang, and Xiren Zhou.
+\newblock Phi-4-mini technical report: Compact yet powerful multimodal language
+  models via mixture-of-loras, 2025.
+\newblock URL \url{https://arxiv.org/abs/2503.01743}.
+
+\bibitem[Qwen et~al.(2025)Qwen, :, Yang, Yang, Zhang, Hui, Zheng, Yu, Li, Liu,
+  Huang, Wei, Lin, Yang, Tu, Zhang, Yang, Yang, Zhou, Lin, Dang, Lu, Bao, Yang,
+  Yu, Li, Xue, Zhang, Zhu, Men, Lin, Li, Tang, Xia, Ren, Ren, Fan, Su, Zhang,
+  Wan, Liu, Cui, Zhang, and Qiu]{qwen2025qwen25technicalreport}
+Qwen, :, An~Yang, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo~Zheng, Bowen Yu,
+  Chengyuan Li, Dayiheng Liu, Fei Huang, Haoran Wei, Huan Lin, Jian Yang,
+  Jianhong Tu, Jianwei Zhang, Jianxin Yang, Jiaxi Yang, Jingren Zhou, Junyang
+  Lin, Kai Dang, Keming Lu, Keqin Bao, Kexin Yang, Le~Yu, Mei Li, Mingfeng Xue,
+  Pei Zhang, Qin Zhu, Rui Men, Runji Lin, Tianhao Li, Tianyi Tang, Tingyu Xia,
+  Xingzhang Ren, Xuancheng Ren, Yang Fan, Yang Su, Yichang Zhang, Yu~Wan,
+  Yuqiong Liu, Zeyu Cui, Zhenru Zhang, and Zihan Qiu.
+\newblock Qwen2.5 technical report, 2025.
+\newblock URL \url{https://arxiv.org/abs/2412.15115}.
+
+\bibitem[Radford et~al.(2022)Radford, Kim, Xu, Brockman, McLeavey, and
+  Sutskever]{radford2022robustspeechrecognitionlargescale}
+Alec Radford, Jong~Wook Kim, Tao Xu, Greg Brockman, Christine McLeavey, and
+  Ilya Sutskever.
+\newblock Robust speech recognition via large-scale weak supervision, 2022.
+\newblock URL \url{https://arxiv.org/abs/2212.04356}.
+
+\bibitem[Saon et~al.(2025)Saon, Dekel, Brooks, Nagano, Daniels, Satt, Mittal,
+  Kingsbury, Haws, Morais, Kurata, Aronowitz, Ibrahim, Kuo, Soule, Lastras,
+  Suzuki, Hoory, Thomas, Novitasari, Fukuda, Sunder, Cui, and
+  Kons]{saon2025granitespeechopensourcespeechawarellms}
+George Saon, Avihu Dekel, Alexander Brooks, Tohru Nagano, Abraham Daniels,
+  Aharon Satt, Ashish Mittal, Brian Kingsbury, David Haws, Edmilson Morais,
+  Gakuto Kurata, Hagai Aronowitz, Ibrahim Ibrahim, Jeff Kuo, Kate Soule, Luis
+  Lastras, Masayuki Suzuki, Ron Hoory, Samuel Thomas, Sashi Novitasari, Takashi
+  Fukuda, Vishal Sunder, Xiaodong Cui, and Zvi Kons.
+\newblock Granite-speech: open-source speech-aware llms with strong english asr
+  capabilities, 2025.
+\newblock URL \url{https://arxiv.org/abs/2505.08699}.
+
+\bibitem[Shah et~al.(2024)Shah, Bikshandi, Zhang, Thakkar, Ramani, and
+  Dao]{shah2024flashattention3fastaccurateattention}
+Jay Shah, Ganesh Bikshandi, Ying Zhang, Vijay Thakkar, Pradeep Ramani, and Tri
+  Dao.
+\newblock Flashattention-3: Fast and accurate attention with asynchrony and
+  low-precision, 2024.
+\newblock URL \url{https://arxiv.org/abs/2407.08608}.
+
+\bibitem[Team et~al.(2025)Team, Kamath, Ferret, Pathak, Vieillard, Merhej,
+  Perrin, Matejovicova, Ramé, Rivière, Rouillard, Mesnard, Cideron, bastien
+  Grill, Ramos, Yvinec, Casbon, Pot, Penchev, Liu, Visin, Kenealy, Beyer, Zhai,
+  Tsitsulin, Busa-Fekete, Feng, Sachdeva, Coleman, Gao, Mustafa, Barr,
+  Parisotto, Tian, Eyal, Cherry, Peter, Sinopalnikov, Bhupatiraju, Agarwal,
+  Kazemi, Malkin, Kumar, Vilar, Brusilovsky, Luo, Steiner, Friesen, Sharma,
+  Sharma, Gilady, Goedeckemeyer, Saade, Feng, Kolesnikov, Bendebury, Abdagic,
+  Vadi, György, Pinto, Das, Bapna, Miech, Yang, Paterson, Shenoy, Chakrabarti,
+  Piot, Wu, Shahriari, Petrini, Chen, Lan, Choquette-Choo, Carey, Brick,
+  Deutsch, Eisenbud, Cattle, Cheng, Paparas, Sreepathihalli, Reid, Tran, Zelle,
+  Noland, Huizenga, Kharitonov, Liu, Amirkhanyan, Cameron, Hashemi,
+  Klimczak-Plucińska, Singh, Mehta, Lehri, Hazimeh, Ballantyne, Szpektor,
+  Nardini, Pouget-Abadie, Chan, Stanton, Wieting, Lai, Orbay, Fernandez,
+  Newlan, yeong Ji, Singh, Black, Yu, Hui, Vodrahalli, Greff, Qiu, Valentine,
+  Coelho, Ritter, Hoffman, Watson, Chaturvedi, Moynihan, Ma, Babar, Noy, Byrd,
+  Roy, Momchev, Chauhan, Sachdeva, Bunyan, Botarda, Caron, Rubenstein,
+  Culliton, Schmid, Sessa, Xu, Stanczyk, Tafti, Shivanna, Wu, Pan, Rokni,
+  Willoughby, Vallu, Mullins, Jerome, Smoot, Girgin, Iqbal, Reddy, Sheth,
+  Põder, Bhatnagar, Panyam, Eiger, Zhang, Liu, Yacovone, Liechty, Kalra, Evci,
+  Misra, Roseberry, Feinberg, Kolesnikov, Han, Kwon, Chen, Chow, Zhu, Wei,
+  Egyed, Cotruta, Giang, Kirk, Rao, Black, Babar, Lo, Moreira, Martins,
+  Sanseviero, Gonzalez, Gleicher, Warkentin, Mirrokni, Senter, Collins, Barral,
+  Ghahramani, Hadsell, Matias, Sculley, Petrov, Fiedel, Shazeer, Vinyals, Dean,
+  Hassabis, Kavukcuoglu, Farabet, Buchatskaya, Alayrac, Anil, Dmitry, Lepikhin,
+  Borgeaud, Bachem, Joulin, Andreev, Hardin, Dadashi, and
+  Hussenot]{gemmateam2025gemma3technicalreport}
+Gemma Team, Aishwarya Kamath, Johan Ferret, Shreya Pathak, Nino Vieillard,
+  Ramona Merhej, Sarah Perrin, Tatiana Matejovicova, Alexandre Ramé, Morgane
+  Rivière, Louis Rouillard, Thomas Mesnard, Geoffrey Cideron, Jean bastien
+  Grill, Sabela Ramos, Edouard Yvinec, Michelle Casbon, Etienne Pot, Ivo
+  Penchev, Gaël Liu, Francesco Visin, Kathleen Kenealy, Lucas Beyer, Xiaohai
+  Zhai, Anton Tsitsulin, Robert Busa-Fekete, Alex Feng, Noveen Sachdeva,
+  Benjamin Coleman, Yi~Gao, Basil Mustafa, Iain Barr, Emilio Parisotto, David
+  Tian, Matan Eyal, Colin Cherry, Jan-Thorsten Peter, Danila Sinopalnikov,
+  Surya Bhupatiraju, Rishabh Agarwal, Mehran Kazemi, Dan Malkin, Ravin Kumar,
+  David Vilar, Idan Brusilovsky, Jiaming Luo, Andreas Steiner, Abe Friesen,
+  Abhanshu Sharma, Abheesht Sharma, Adi~Mayrav Gilady, Adrian Goedeckemeyer,
+  Alaa Saade, Alex Feng, Alexander Kolesnikov, Alexei Bendebury, Alvin Abdagic,
+  Amit Vadi, András György, André~Susano Pinto, Anil Das, Ankur Bapna,
+  Antoine Miech, Antoine Yang, Antonia Paterson, Ashish Shenoy, Ayan
+  Chakrabarti, Bilal Piot, Bo~Wu, Bobak Shahriari, Bryce Petrini, Charlie Chen,
+  Charline~Le Lan, Christopher~A. Choquette-Choo, CJ~Carey, Cormac Brick,
+  Daniel Deutsch, Danielle Eisenbud, Dee Cattle, Derek Cheng, Dimitris Paparas,
+  Divyashree~Shivakumar Sreepathihalli, Doug Reid, Dustin Tran, Dustin Zelle,
+  Eric Noland, Erwin Huizenga, Eugene Kharitonov, Frederick Liu, Gagik
+  Amirkhanyan, Glenn Cameron, Hadi Hashemi, Hanna Klimczak-Plucińska, Harman
+  Singh, Harsh Mehta, Harshal~Tushar Lehri, Hussein Hazimeh, Ian Ballantyne,
+  Idan Szpektor, Ivan Nardini, Jean Pouget-Abadie, Jetha Chan, Joe Stanton,
+  John Wieting, Jonathan Lai, Jordi Orbay, Joseph Fernandez, Josh Newlan,
+  Ju~yeong Ji, Jyotinder Singh, Kat Black, Kathy Yu, Kevin Hui, Kiran
+  Vodrahalli, Klaus Greff, Linhai Qiu, Marcella Valentine, Marina Coelho,
+  Marvin Ritter, Matt Hoffman, Matthew Watson, Mayank Chaturvedi, Michael
+  Moynihan, Min Ma, Nabila Babar, Natasha Noy, Nathan Byrd, Nick Roy, Nikola
+  Momchev, Nilay Chauhan, Noveen Sachdeva, Oskar Bunyan, Pankil Botarda, Paul
+  Caron, Paul~Kishan Rubenstein, Phil Culliton, Philipp Schmid, Pier~Giuseppe
+  Sessa, Pingmei Xu, Piotr Stanczyk, Pouya Tafti, Rakesh Shivanna, Renjie Wu,
+  Renke Pan, Reza Rokni, Rob Willoughby, Rohith Vallu, Ryan Mullins, Sammy
+  Jerome, Sara Smoot, Sertan Girgin, Shariq Iqbal, Shashir Reddy, Shruti Sheth,
+  Siim Põder, Sijal Bhatnagar, Sindhu~Raghuram Panyam, Sivan Eiger, Susan
+  Zhang, Tianqi Liu, Trevor Yacovone, Tyler Liechty, Uday Kalra, Utku Evci,
+  Vedant Misra, Vincent Roseberry, Vlad Feinberg, Vlad Kolesnikov, Woohyun Han,
+  Woosuk Kwon, Xi~Chen, Yinlam Chow, Yuvein Zhu, Zichuan Wei, Zoltan Egyed,
+  Victor Cotruta, Minh Giang, Phoebe Kirk, Anand Rao, Kat Black, Nabila Babar,
+  Jessica Lo, Erica Moreira, Luiz~Gustavo Martins, Omar Sanseviero, Lucas
+  Gonzalez, Zach Gleicher, Tris Warkentin, Vahab Mirrokni, Evan Senter, Eli
+  Collins, Joelle Barral, Zoubin Ghahramani, Raia Hadsell, Yossi Matias,
+  D.~Sculley, Slav Petrov, Noah Fiedel, Noam Shazeer, Oriol Vinyals, Jeff Dean,
+  Demis Hassabis, Koray Kavukcuoglu, Clement Farabet, Elena Buchatskaya,
+  Jean-Baptiste Alayrac, Rohan Anil, Dmitry, Lepikhin, Sebastian Borgeaud,
+  Olivier Bachem, Armand Joulin, Alek Andreev, Cassidy Hardin, Robert Dadashi,
+  and Léonard Hussenot.
+\newblock Gemma 3 technical report, 2025.
+\newblock URL \url{https://arxiv.org/abs/2503.19786}.
+
+\bibitem[Wang et~al.(2024)Wang, Cui, Yang, Chen, and
+  Meng]{wang2024comparativestudydiscretespeech}
+Dingdong Wang, Mingyu Cui, Dongchao Yang, Xueyuan Chen, and Helen Meng.
+\newblock A comparative study of discrete speech tokens for semantic-related
+  tasks with large language models, 2024.
+\newblock URL \url{https://arxiv.org/abs/2411.08742}.
+
+\bibitem[Wang et~al.(2023)Wang, Zhou, Zhang, Wu, Liu, Gaur, Chen, Li, and
+  Wei]{wang2023violaunifiedcodeclanguage}
+Tianrui Wang, Long Zhou, Ziqiang Zhang, Yu~Wu, Shujie Liu, Yashesh Gaur, Zhuo
+  Chen, Jinyu Li, and Furu Wei.
+\newblock Viola: Unified codec language models for speech recognition,
+  synthesis, and translation, 2023.
+\newblock URL \url{https://arxiv.org/abs/2305.16107}.
+
+\bibitem[Wijmans et~al.(2025)Wijmans, Huval, Hertzberg, Koltun, and
+  Krähenbühl]{wijmans2025cutlosseslargevocabularylanguage}
+Erik Wijmans, Brody Huval, Alexander Hertzberg, Vladlen Koltun, and Philipp
+  Krähenbühl.
+\newblock Cut your losses in large-vocabulary language models, 2025.
+\newblock URL \url{https://arxiv.org/abs/2411.09009}.
+
+\bibitem[Xu et~al.(2025{\natexlab{a}})Xu, Guo, He, Hu, He, Bai, Chen, Wang,
+  Fan, Dang, Zhang, Wang, Chu, and Lin]{xu2025qwen25omnitechnicalreport}
+Jin Xu, Zhifang Guo, Jinzheng He, Hangrui Hu, Ting He, Shuai Bai, Keqin Chen,
+  Jialin Wang, Yang Fan, Kai Dang, Bin Zhang, Xiong Wang, Yunfei Chu, and
+  Junyang Lin.
+\newblock Qwen2.5-omni technical report, 2025{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2503.20215}.
+
+\bibitem[Xu et~al.(2025{\natexlab{b}})Xu, Guo, Hu, Chu, Wang, He, Wang, Shi,
+  He, Zhu, Lv, Wang, Guo, Wang, Ma, Zhang, Zhang, Hao, Guo, Yang, Zhang, Ma,
+  Wei, Bai, Chen, Liu, Wang, Yang, Liu, Ren, Zheng, Men, Zhou, Yu, Yang, Yu,
+  Zhou, and Lin]{xu2025qwen3omnitechnicalreport}
+Jin Xu, Zhifang Guo, Hangrui Hu, Yunfei Chu, Xiong Wang, Jinzheng He, Yuxuan
+  Wang, Xian Shi, Ting He, Xinfa Zhu, Yuanjun Lv, Yongqi Wang, Dake Guo,
+  He~Wang, Linhan Ma, Pei Zhang, Xinyu Zhang, Hongkun Hao, Zishan Guo, Baosong
+  Yang, Bin Zhang, Ziyang Ma, Xipin Wei, Shuai Bai, Keqin Chen, Xuejing Liu,
+  Peng Wang, Mingkun Yang, Dayiheng Liu, Xingzhang Ren, Bo~Zheng, Rui Men, Fan
+  Zhou, Bowen Yu, Jianxin Yang, Le~Yu, Jingren Zhou, and Junyang Lin.
+\newblock Qwen3-omni technical report, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2509.17765}.
+
+\bibitem[Yang et~al.(2025)Yang, Li, Yang, Zhang, Hui, Zheng, Yu, Gao, Huang,
+  Lv, Zheng, Liu, Zhou, Huang, Hu, Ge, Wei, Lin, Tang, Yang, Tu, Zhang, Yang,
+  Yang, Zhou, Zhou, Lin, Dang, Bao, Yang, Yu, Deng, Li, Xue, Li, Zhang, Wang,
+  Zhu, Men, Gao, Liu, Luo, Li, Tang, Yin, Ren, Wang, Zhang, Ren, Fan, Su,
+  Zhang, Zhang, Wan, Liu, Wang, Cui, Zhang, Zhou, and
+  Qiu]{yang2025qwen3technicalreport}
+An~Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo~Zheng, Bowen
+  Yu, Chang Gao, Chengen Huang, Chenxu Lv, Chujie Zheng, Dayiheng Liu, Fan
+  Zhou, Fei Huang, Feng Hu, Hao Ge, Haoran Wei, Huan Lin, Jialong Tang, Jian
+  Yang, Jianhong Tu, Jianwei Zhang, Jianxin Yang, Jiaxi Yang, Jing Zhou,
+  Jingren Zhou, Junyang Lin, Kai Dang, Keqin Bao, Kexin Yang, Le~Yu, Lianghao
+  Deng, Mei Li, Mingfeng Xue, Mingze Li, Pei Zhang, Peng Wang, Qin Zhu, Rui
+  Men, Ruize Gao, Shixuan Liu, Shuang Luo, Tianhao Li, Tianyi Tang, Wenbiao
+  Yin, Xingzhang Ren, Xinyu Wang, Xinyu Zhang, Xuancheng Ren, Yang Fan, Yang
+  Su, Yichang Zhang, Yinger Zhang, Yu~Wan, Yuqiong Liu, Zekun Wang, Zeyu Cui,
+  Zhenru Zhang, Zhipeng Zhou, and Zihan Qiu.
+\newblock Qwen3 technical report, 2025.
+\newblock URL \url{https://arxiv.org/abs/2505.09388}.
+
+\bibitem[Ye et~al.(2024)Ye, Sun, Lei, Lin, Tan, Dai, Kong, Chen, Pan, Liu, Guo,
+  and Xue]{ye2024codecdoesmatterexploring}
+Zhen Ye, Peiwen Sun, Jiahe Lei, Hongzhan Lin, Xu~Tan, Zheqi Dai, Qiuqiang Kong,
+  Jianyi Chen, Jiahao Pan, Qifeng Liu, Yike Guo, and Wei Xue.
+\newblock Codec does matter: Exploring the semantic shortcoming of codec for
+  audio language model, 2024.
+\newblock URL \url{https://arxiv.org/abs/2408.17175}.
+
+\bibitem[Zhang et~al.(2024)Zhang, Xue, Gu, Wang, Li, He, Wang, Song, Chen,
+  Fang, Chen, Zhang, Tang, Zou, Wang, Han, Chen, Li, and Wu]{amphion}
+Xueyao Zhang, Liumeng Xue, Yicheng Gu, Yuancheng Wang, Jiaqi Li, Haorui He,
+  Chaoren Wang, Ting Song, Xi~Chen, Zihao Fang, Haopeng Chen, Junan Zhang,
+  Tze~Ying Tang, Lexiao Zou, Mingxuan Wang, Jun Han, Kai Chen, Haizhou Li, and
+  Zhizheng Wu.
+\newblock Amphion: An open-source audio, music and speech generation toolkit.
+\newblock In \emph{Proc.~of SLT}, 2024.
+
+\bibitem[Zheng et~al.(2024)Zheng, Yin, Xie, Sun, Huang, Yu, Cao, Kozyrakis,
+  Stoica, Gonzalez, Barrett, and
+  Sheng]{zheng2024sglangefficientexecutionstructured}
+Lianmin Zheng, Liangsheng Yin, Zhiqiang Xie, Chuyue Sun, Jeff Huang, Cody~Hao
+  Yu, Shiyi Cao, Christos Kozyrakis, Ion Stoica, Joseph~E. Gonzalez, Clark
+  Barrett, and Ying Sheng.
+\newblock Sglang: Efficient execution of structured language model programs,
+  2024.
+\newblock URL \url{https://arxiv.org/abs/2312.07104}.
+
+\bibitem[Zolkepli(2026)]{zolkepli2026improvingxcodec20multilingualspeech}
+Husein Zolkepli.
+\newblock Improving x-codec-2.0 for multi-lingual speech: 25 hz latent rate and
+  24 khz sampling, 2026.
+\newblock URL \url{https://arxiv.org/abs/2601.20185}.
+
+\end{thebibliography}

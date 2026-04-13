@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2023/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: preprint.aux
+The style file: plainnat.bst
+Database file #1: preprint.bib
+Warning--entry type for "ashraf2024ctcforcedaligner" isn't style-file defined
+--line 210 of file preprint.bib
+You've used 32 entries,
+            2773 wiz_defined-function locations,
+            725 strings with 22237 characters,
+and the built_in function-call counts, 47438 in all, are:
+= -- 3134
+> -- 7110
+< -- 3
++ -- 2373
+- -- 2340
+* -- 5179
+:= -- 8190
+add.period$ -- 96
+call.type$ -- 32
+change.case$ -- 876
+chr.to.int$ -- 31
+cite$ -- 64
+duplicate$ -- 525
+empty$ -- 1070
+format.name$ -- 2372
+if$ -- 8913
+int.to.chr$ -- 2
+int.to.str$ -- 1
+missing$ -- 2
+newline$ -- 168
+num.names$ -- 128
+pop$ -- 1853
+preamble$ -- 1
+purify$ -- 844
+quote$ -- 0
+skip$ -- 1192
+stack$ -- 0
+substring$ -- 64
+swap$ -- 36
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 352
+warning$ -- 0
+while$ -- 96
+width$ -- 0
+write$ -- 391
+(There was 1 warning)
