@@ -1,4 +1,4 @@
-\begin{thebibliography}{32}
+\begin{thebibliography}{30}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -27,13 +27,6 @@ Kaito Baba, Wataru Nakata, Yuki Saito, and Hiroshi Saruwatari.
   from deep image classifier to naturalness mos prediction of high-quality
   synthetic speech, 2024.
 \newblock URL \url{https://arxiv.org/abs/2409.09305}.
-
-\bibitem[Chu et~al.(2024)Chu, Xu, Yang, Wei, Wei, Guo, Leng, Lv, He, Lin, Zhou,
-  and Zhou]{chu2024qwen2audiotechnicalreport}
-Yunfei Chu, Jin Xu, Qian Yang, Haojie Wei, Xipin Wei, Zhifang Guo, Yichong
-  Leng, Yuanjun Lv, Jinzheng He, Junyang Lin, Chang Zhou, and Jingren Zhou.
-\newblock Qwen2-audio technical report, 2024.
-\newblock URL \url{https://arxiv.org/abs/2407.10759}.
 
 \bibitem[Dao(2023)]{dao2023flashattention2fasterattentionbetter}
 Tri Dao.
@@ -81,12 +74,23 @@ Wei-Ning Hsu, Benjamin Bolte, Yao-Hung~Hubert Tsai, Kushal Lakhotia, Ruslan
   prediction of hidden units, 2021.
 \newblock URL \url{https://arxiv.org/abs/2106.07447}.
 
+\bibitem[Jordan et~al.(2025)Jordan, Chen, Orvieto, and De]{muon}
+Keller Jordan, Yuqing Chen, Antonio Orvieto, and Soham De.
+\newblock Muon: An optimizer for hidden layers in neural networks, 2025.
+
 \bibitem[Julian et~al.(2025)Julian, Beeson, Konathala, Ulin, and
   Gao]{julian2025finitescalarquantizationenables}
 Harry Julian, Rachel Beeson, Lohith Konathala, Johanna Ulin, and Jiameng Gao.
 \newblock Finite scalar quantization enables redundant and transmission-robust
   neural audio compression at low bit-rates, 2025.
 \newblock URL \url{https://arxiv.org/abs/2509.09550}.
+
+\bibitem[Koluguri et~al.(2022)Koluguri, Park, and
+  Ginsburg]{koluguri2022titanet}
+Nithin~Rao Koluguri, Taejin Park, and Boris Ginsburg.
+\newblock Titanet: Neural model for speaker representation with 1d depth-wise
+  separable convolutions and global context.
+\newblock In \emph{Proceedings of ICASSP}, 2022.
 
 \bibitem[Koluguri et~al.(2025)Koluguri, Sekoyan, Zelenfroynd, Meister, Ding,
   Kostandian, Huang, Karpov, Balam, Lavrukhin, Peng, Papi, Gaido, Brutti, and
@@ -98,55 +102,6 @@ Nithin~Rao Koluguri, Monica Sekoyan, George Zelenfroynd, Sasha Meister,
 \newblock Granary: Speech recognition and translation dataset in 25 european
   languages, 2025.
 \newblock URL \url{https://arxiv.org/abs/2505.13404}.
-
-\bibitem[Kwon et~al.(2023)Kwon, Li, Zhuang, Sheng, Zheng, Yu, Gonzalez, Zhang,
-  and Stoica]{kwon2023efficientmemorymanagementlarge}
-Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin Zheng, Cody~Hao Yu,
-  Joseph~E. Gonzalez, Hao Zhang, and Ion Stoica.
-\newblock Efficient memory management for large language model serving with
-  pagedattention, 2023.
-\newblock URL \url{https://arxiv.org/abs/2309.06180}.
-
-\bibitem[Liu et~al.(2025)Liu, Ehrenberg, Lo, Denoix, Barreau, Lample, Delignon,
-  Chandu, von Platen, Muddireddy, Gandhi, Ghosh, Mishra, Foubert, Rastogi,
-  Yang, Jiang, Sablayrolles, Héliou, Martin, Agarwal, Roux, Darcet, Mensch,
-  Bout, Rozière, Monicault, Bamford, Wallenwein, Renaudin, Lanfranchi, Dabert,
-  Chaplot, Mizelle, de~las Casas, Chane-Sane, Fugier, Hanna, Berrada, Delerce,
-  Guinet, Novikov, Martin, Jaju, Ludziejewski, Rute, Chabran, Chudnovsky,
-  Studnia, Barmentlo, Amar, Roberts, Denize, Saxena, Yadav, Khandelwal, Jain,
-  Lavaud, Blier, Zhao, Martin, Saulnier, Gao, Pellat, Guillaumin, Felardos,
-  Dinot, Darrin, Augustin, Seznec, Gupta, Raghuraman, Duchenne, Wang, Saffer,
-  Jacob, Wambergue, Kurylowicz, Chagniot, Stock, Agrawal, Delacourt, Sauvestre,
-  Soletskyi, Vaze, Subramanian, Garg, Dalal, Gandhi, Aithal, Antoniak, Scao,
-  Schueller, Lavril, Robert, Wang, Lacroix, Bewley, Nemychnikova, Paltz,
-  Richard, Li, Marshall, Zhang, Wan, and Tang]{liu2025voxtral}
-Alexander~H. Liu, Andy Ehrenberg, Andy Lo, Clément Denoix, Corentin Barreau,
-  Guillaume Lample, Jean-Malo Delignon, Khyathi~Raghavi Chandu, Patrick von
-  Platen, Pavankumar~Reddy Muddireddy, Sanchit Gandhi, Soham Ghosh, Srijan
-  Mishra, Thomas Foubert, Abhinav Rastogi, Adam Yang, Albert~Q. Jiang,
-  Alexandre Sablayrolles, Amélie Héliou, Amélie Martin, Anmol Agarwal,
-  Antoine Roux, Arthur Darcet, Arthur Mensch, Baptiste Bout, Baptiste Rozière,
-  Baudouin~De Monicault, Chris Bamford, Christian Wallenwein, Christophe
-  Renaudin, Clémence Lanfranchi, Darius Dabert, Devendra~Singh Chaplot, Devon
-  Mizelle, Diego de~las Casas, Elliot Chane-Sane, Emilien Fugier, Emma~Bou
-  Hanna, Gabrielle Berrada, Gauthier Delerce, Gauthier Guinet, Georgii Novikov,
-  Guillaume Martin, Himanshu Jaju, Jan Ludziejewski, Jason Rute, Jean-Hadrien
-  Chabran, Jessica Chudnovsky, Joachim Studnia, Joep Barmentlo, Jonas Amar,
-  Josselin~Somerville Roberts, Julien Denize, Karan Saxena, Karmesh Yadav,
-  Kartik Khandelwal, Kush Jain, Lélio~Renard Lavaud, Léonard Blier, Lingxiao
-  Zhao, Louis Martin, Lucile Saulnier, Luyu Gao, Marie Pellat, Mathilde
-  Guillaumin, Mathis Felardos, Matthieu Dinot, Maxime Darrin, Maximilian
-  Augustin, Mickaël Seznec, Neha Gupta, Nikhil Raghuraman, Olivier Duchenne,
-  Patricia Wang, Patryk Saffer, Paul Jacob, Paul Wambergue, Paula Kurylowicz,
-  Philomène Chagniot, Pierre Stock, Pravesh Agrawal, Rémi Delacourt, Romain
-  Sauvestre, Roman Soletskyi, Sagar Vaze, Sandeep Subramanian, Saurabh Garg,
-  Shashwat Dalal, Siddharth Gandhi, Sumukh Aithal, Szymon Antoniak, Teven~Le
-  Scao, Thibault Schueller, Thibaut Lavril, Thomas Robert, Thomas Wang,
-  Timothée Lacroix, Tom Bewley, Valeriia Nemychnikova, Victor Paltz, Virgile
-  Richard, Wen-Ding Li, William Marshall, Xuanyu Zhang, Yihan Wan, and Yunhao
-  Tang.
-\newblock Voxtral, 2025.
-\newblock URL \url{https://arxiv.org/abs/2507.13264}.
 
 \bibitem[Liu et~al.(2024)Liu, Guo, Xu, Lv, Chu, Zhao, and
   Lin]{liu2024analyzingmitigatinginconsistencydiscrete}
@@ -383,16 +338,6 @@ Xueyao Zhang, Liumeng Xue, Yicheng Gu, Yuancheng Wang, Jiaqi Li, Haorui He,
   Zhizheng Wu.
 \newblock Amphion: An open-source audio, music and speech generation toolkit.
 \newblock In \emph{Proc.~of SLT}, 2024.
-
-\bibitem[Zheng et~al.(2024)Zheng, Yin, Xie, Sun, Huang, Yu, Cao, Kozyrakis,
-  Stoica, Gonzalez, Barrett, and
-  Sheng]{zheng2024sglangefficientexecutionstructured}
-Lianmin Zheng, Liangsheng Yin, Zhiqiang Xie, Chuyue Sun, Jeff Huang, Cody~Hao
-  Yu, Shiyi Cao, Christos Kozyrakis, Ion Stoica, Joseph~E. Gonzalez, Clark
-  Barrett, and Ying Sheng.
-\newblock Sglang: Efficient execution of structured language model programs,
-  2024.
-\newblock URL \url{https://arxiv.org/abs/2312.07104}.
 
 \bibitem[Zolkepli(2026)]{zolkepli2026improvingxcodec20multilingualspeech}
 Husein Zolkepli.

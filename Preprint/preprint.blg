@@ -5,45 +5,45 @@ The style file: plainnat.bst
 Database file #1: preprint.bib
 Warning--entry type for "ashraf2024ctcforcedaligner" isn't style-file defined
 --line 210 of file preprint.bib
-You've used 32 entries,
+You've used 30 entries,
             2773 wiz_defined-function locations,
-            725 strings with 22237 characters,
-and the built_in function-call counts, 47438 in all, are:
-= -- 3134
-> -- 7110
+            717 strings with 19541 characters,
+and the built_in function-call counts, 40331 in all, are:
+= -- 2685
+> -- 5916
 < -- 3
-+ -- 2373
-- -- 2340
-* -- 5179
-:= -- 8190
-add.period$ -- 96
-call.type$ -- 32
-change.case$ -- 876
-chr.to.int$ -- 31
-cite$ -- 64
-duplicate$ -- 525
-empty$ -- 1070
-format.name$ -- 2372
-if$ -- 8913
++ -- 1975
+- -- 1944
+* -- 4354
+:= -- 6931
+add.period$ -- 89
+call.type$ -- 30
+change.case$ -- 738
+chr.to.int$ -- 29
+cite$ -- 60
+duplicate$ -- 501
+empty$ -- 1012
+format.name$ -- 1974
+if$ -- 7612
 int.to.chr$ -- 2
 int.to.str$ -- 1
-missing$ -- 2
-newline$ -- 168
-num.names$ -- 128
-pop$ -- 1853
+missing$ -- 3
+newline$ -- 157
+num.names$ -- 120
+pop$ -- 1573
 preamble$ -- 1
-purify$ -- 844
+purify$ -- 708
 quote$ -- 0
-skip$ -- 1192
+skip$ -- 1033
 stack$ -- 0
-substring$ -- 64
-swap$ -- 36
+substring$ -- 60
+swap$ -- 35
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 352
+type$ -- 330
 warning$ -- 0
-while$ -- 96
+while$ -- 90
 width$ -- 0
-write$ -- 391
+write$ -- 365
 (There was 1 warning)

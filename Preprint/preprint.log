@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2026.4.13)  13 APR 2026 17:02
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2026.4.13)  14 APR 2026 12:15
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -733,44 +733,54 @@ Package microtype Info: Loading generic protrusion settings for font family
 
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texlive/texmf-di
-st/fonts/enc/dvips/base/8r.enc}] [2] [3] [4]
+st/fonts/enc/dvips/base/8r.enc}]
+Underfull \vbox (badness 1189) has occurred while \output is active []
+
+ [2]
+Underfull \vbox (badness 4441) has occurred while \output is active []
+
+ [3]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [5]
-[6] [7] [8] [9]
-<wb-wallclock.png, id=176, 5074.96pt x 2665.96pt>
+ [4]
+[5] [6] [7] [8] [9]
+<wb-wallclock.png, id=174, 5074.96pt x 2665.96pt>
 File: wb-wallclock.png Graphic file (type png)
 <use wb-wallclock.png>
-Package pdftex.def Info: wb-wallclock.png  used on input line 308.
+Package pdftex.def Info: wb-wallclock.png  used on input line 309.
 (pdftex.def)             Requested size: 337.86465pt x 177.48344pt.
-<wb-mfu.png, id=178, 5074.96pt x 2665.96pt>
+<wb-mfu.png, id=176, 5074.96pt x 2665.96pt>
 File: wb-mfu.png Graphic file (type png)
 <use wb-mfu.png>
-Package pdftex.def Info: wb-mfu.png  used on input line 317.
+Package pdftex.def Info: wb-mfu.png  used on input line 318.
 (pdftex.def)             Requested size: 337.86465pt x 177.48344pt.
- [10 <./wb-wallclock.png> <./wb-mfu.png>]
-<wb-loss-liger.png, id=189, 5074.96pt x 2665.96pt>
+
+
+LaTeX Warning: `h' float specifier changed to `ht'.
+
+[10 <./wb-wallclock.png>]
+<wb-loss-liger.png, id=187, 5074.96pt x 2665.96pt>
 File: wb-loss-liger.png Graphic file (type png)
 <use wb-loss-liger.png>
-Package pdftex.def Info: wb-loss-liger.png  used on input line 343.
+Package pdftex.def Info: wb-loss-liger.png  used on input line 344.
 (pdftex.def)             Requested size: 337.86465pt x 177.48344pt.
-<wb-mfu-liger.png, id=190, 5074.96pt x 2665.96pt>
+<wb-mfu-liger.png, id=188, 5074.96pt x 2665.96pt>
 File: wb-mfu-liger.png Graphic file (type png)
 <use wb-mfu-liger.png>
-Package pdftex.def Info: wb-mfu-liger.png  used on input line 352.
+Package pdftex.def Info: wb-mfu-liger.png  used on input line 353.
 (pdftex.def)             Requested size: 337.86465pt x 177.48344pt.
 
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 357--357
+Underfull \hbox (badness 10000) in paragraph at lines 358--358
 [][][][][]$\T1/cmtt/m/n/9 https : / / github . com / Scicom-[]AI-[]Enterprise-[
 ]Organization / small-[]ablation / tree / main /
  []
 
-[11 <./wb-loss-liger.png>] [12 <./wb-mfu-liger.png>] [13] (./preprint.bbl
-[14] [15] [16]) [17] (./preprint.aux)
+[11 <./wb-mfu.png> <./wb-loss-liger.png>] [12 <./wb-mfu-liger.png>] [13]
+(./preprint.bbl [14] [15] [16]) [17] (./preprint.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
@@ -781,10 +791,10 @@ LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 17426 strings out of 476106
- 278412 string characters out of 5793933
- 1941975 words of memory out of 5000000
- 38855 multiletter control sequences out of 15000+600000
+ 17418 strings out of 476106
+ 277938 string characters out of 5793933
+ 1940975 words of memory out of 5000000
+ 38849 multiletter control sequences out of 15000+600000
  598587 words of font info for 218 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
  89i,8n,93p,1962b,629s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -796,10 +806,10 @@ b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr
 /texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-
 dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type
 1/urw/times/utmri8a.pfb>
-Output written on preprint.pdf (17 pages, 1203873 bytes).
+Output written on preprint.pdf (17 pages, 1202169 bytes).
 PDF statistics:
- 531 PDF objects out of 1000 (max. 8388607)
- 379 compressed objects within 4 object streams
- 106 named destinations out of 1000 (max. 500000)
+ 524 PDF objects out of 1000 (max. 8388607)
+ 372 compressed objects within 4 object streams
+ 104 named destinations out of 1000 (max. 500000)
  40621 words of extra memory for PDF output out of 42996 (max. 10000000)
 
